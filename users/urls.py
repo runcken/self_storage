@@ -1,0 +1,19 @@
+# Маршруты приложения пользователей
+from django.urls import path
+from . import views
+
+
+urlpatterns = [
+    # Основные страницы
+    path('', views.home_view, name='home'),
+    path('boxes/', views.boxes_view, name='boxes'),
+    path('faq/', views.faq_view, name='faq'),
+    
+    # Аутентификация
+    path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    
+    # Личный кабинет
+    path('cabinet/', views.cabinet_view, name='cabinet'),
+]
