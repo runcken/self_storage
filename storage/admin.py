@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from datetime import date
-from .models import Warehouse, WarehouseImage, Client
+from .models import Warehouse, WarehouseImage, Client, RentalAgreement
 
 
 class WarehouseImageInline(admin.TabularInline):
@@ -9,6 +9,13 @@ class WarehouseImageInline(admin.TabularInline):
     extra = 1
     fields = ('image', 'order')
     ordering = ('order',)
+
+
+class AgreementInline(admin.TabularInline):
+    model = RentalAgreement
+    extra = 1
+    fields = ('warehouse', 'units_count', 'start_date', 'end_date', 'status')
+    show_change_link = True
 
 
 @admin.register(Warehouse)
@@ -20,14 +27,15 @@ class WarehouseAdmin(admin.ModelAdmin):
         'unit_size_category', 
         'temperature', 
         'get_free_units_display', 
-        'cost_per_unit', 
-        'total_units'
+        'cost_per_unit'
     )
     
     list_filter = ('unit_size_category', 'temperature', 'address')
-    search_fields = ('address', 'description')
+    search_fields = ('address', )
     list_editable = ('cost_per_unit', 'temperature')
     inlines = [WarehouseImageInline]
+
+    readonly_fields = ('list_tenants',)
     
     fieldsets = (
         ('Основная информация', {
@@ -50,8 +58,7 @@ class WarehouseAdmin(admin.ModelAdmin):
     get_free_units_display.short_description = "Свободно / Всего"
 
     def warehouse_image_preview(self, obj):
-        first_image = obj.images.first()
-        
+        first_image = obj.images.first() 
         if first_image and first_image.image:
             return format_html(
                 '<img src="{}" style="max-height: 50px; max-width: 80px; border-radius: 4px; object-fit: cover;" />',
@@ -61,8 +68,15 @@ class WarehouseAdmin(admin.ModelAdmin):
             return format_html(
                 '<div style="width: 80px; height: 50px; background: #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #777; font-size: 10px;">Нет фото</div>'
             )
-    
     warehouse_image_preview.short_description = "Фото"
+
+    def list_tenants(self, obj):
+        agreements = obj.agreements.filter(status='active')
+        if not agreements:
+            return "Нет активных арендаторов"
+        lines = [f"{ag.client.full_name} ({ag.units_count} мес.)" for ag in agreements]
+        return format_html("<br>".join(lines))
+    list_tenants.short_description = "Кто арендует"
 
 
 @admin.register(WarehouseImage)
@@ -79,11 +93,22 @@ class WarehouseImageAdmin(admin.ModelAdmin):
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'phone', 'email', 'required_units', 'rent_start_date', 'rent_end_date', 'is_rent_active_status')
-    list_filter = ('rent_start_date', 'rent_end_date')
+    list_display = ('full_name', 'phone', 'email', 'get_total_units', 'rent_status_summary')
     search_fields = ('full_name', 'phone', 'email')
-    readonly_fields = ('is_rent_active_status', 'days_remaining')
+    inlines =[AgreementInline]
+
+    def get_total_units(self, obj):
+        return obj.total_active_units
+    get_total_units.short_description = "Всего мест"  
     
-    def is_rent_active_status(self, obj):
-        return "Активна" if obj.is_rent_active else "Истекла"
-    is_rent_active_status.short_description = "Статус"
+    def rent_status_summary(self, obj):
+        count = obj.agreements.filter(status='active').count()
+        return f"Активных договоров: {count}"
+    rent_status_summary.short_description = "Статус"
+
+
+@admin.register(RentalAgreement)
+class RentalAgreementAdmin(admin.ModelAdmin):
+    list_display = ('client', 'warehouse', 'units_count', 'start_date', 'end_date', 'status')
+    list_filter = ('status', 'warehouse', 'start_date')
+    search_fields = ('client__full_name', 'warehouse__address')

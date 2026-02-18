@@ -21,9 +21,9 @@ class Warehouse(models.Model):
         help_text="Например: 17 °С или 15-20 °С"
     )
     ceiling_height = models.DecimalField(
-    	max_digits=5,
-    	decimal_places=2,
-    	verbose_name="Высота потолка (м)"
+        max_digits=5,
+        decimal_places=2,
+        verbose_name="Высота потолка (м)"
     )
     cost_per_unit = models.DecimalField(
         max_digits=10, decimal_places=2, 
@@ -31,17 +31,17 @@ class Warehouse(models.Model):
         validators=[MinValueValidator(0)]
     )
     unit_size_category = models.CharField(
-    	max_length=10,
-    	choices=SIZE_CHOICES,
-    	verbose_name="Категория размера места"
+        max_length=10,
+        choices=SIZE_CHOICES,
+        verbose_name="Категория размера места"
     )
     total_units = models.PositiveIntegerField(
-    	default=0,
-    	verbose_name="Общее количество мест"
+        default=0,
+        verbose_name="Общее количество мест"
     )
     occupied_units = models.PositiveIntegerField(
-    	default=0,
-    	verbose_name="Количество занятых мест"
+        default=0,
+        verbose_name="Количество занятых мест"
     )
 
     class Meta:
@@ -58,18 +58,18 @@ class Warehouse(models.Model):
 
 class WarehouseImage(models.Model):
     warehouse = models.ForeignKey(
-    	Warehouse,
-    	on_delete=models.CASCADE,
-    	related_name='images',
-    	verbose_name="Склад"
+        Warehouse,
+        on_delete=models.CASCADE,
+        related_name='images',
+        verbose_name="Склад"
     )
     image = models.ImageField(
-    	upload_to='warehouses/',
-    	verbose_name="Изображение"
+        upload_to='warehouses/',
+        verbose_name="Изображение"
     )
     order = models.PositiveIntegerField(
-    	default=0,
-    	verbose_name="Порядок отображения"
+        default=0,
+        verbose_name="Порядок отображения"
     )
 
     class Meta:
@@ -80,32 +80,20 @@ class WarehouseImage(models.Model):
     def __str__(self):
         return f"Фото для {self.warehouse.address}"
 
+
 class Client(models.Model):
     user = models.OneToOneField(
-    	User,
-    	on_delete=models.CASCADE,
-    	related_name='client_profile',
-    	verbose_name="Пользователь",
-    	null=True,
-    	blank=True
+        User,
+        on_delete=models.CASCADE,
+        related_name='client_profile',
+        verbose_name="Пользователь",
+        null=True,
+        blank=True
     )
     full_name = models.CharField(max_length=255, verbose_name="ФИО")
     address = models.CharField(max_length=255, verbose_name="Адрес клиента")
     phone = models.CharField(max_length=20, verbose_name="Телефон")
     email = models.EmailField(verbose_name="Электронная почта")
-    required_units = models.PositiveIntegerField(
-    	default=0,
-    	verbose_name="Количество занятых мест"
-    )
-    rent_start_date = models.DateField(
-    	verbose_name="Дата начала аренды",
-    	default=date.today
-    )
-    rent_end_date = models.DateField(
-    	verbose_name="Дата окончания аренды",
-    	null=True,
-    	blank=True
-    )
 
     class Meta:
         verbose_name = "Клиент"
@@ -116,13 +104,58 @@ class Client(models.Model):
         return self.full_name
 
     @property
-    def is_rent_active(self):
-        if self.rent_end_date and date.today() > self.rent_end_date:
-            return False
-        return True
+    def total_active_units(self):
+        active = self.agreements.filter(status='active')
+        return sum(ag.units_count for ag in active)
 
-    @property
-    def days_remaining(self):
-        if not self.rent_end_date:
-            return None
-        return max(0, (self.rent_end_date - date.today()).days)
+
+class RentalAgreement(models.Model):
+    STATUS_CHOICES = [
+        ('active', 'Активен'),
+        ('completed', 'Завершен'),
+        ('cancelled', 'Завершен')
+    ]
+
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name='agreements',
+        verbose_name="Клиент"
+    )
+    warehouse = models.ForeignKey(
+        Warehouse,
+        on_delete=models.PROTECT,
+        related_name='agreements',
+        verbose_name="Склад"
+    )
+    units_count = models.PositiveIntegerField(
+        verbose_name="Количество мест",
+        validators=[MinValueValidator(1)]
+    )
+    start_date = models.DateField(
+        verbose_name="Дата начала",
+        default=date.today
+    )
+    end_date = models.DateField(
+        verbose_name="Дата окончания",
+        null=True,
+        blank=True,
+        help_text="Оставьте пустым для бессрочной аренды"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания"
+    )
+
+    class Meta:
+        verbose_name = "Договор аренды"
+        verbose_name_plural = "Договоры аренды"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.client.full_name} -> {self.warehouse.address}"
