@@ -14,6 +14,7 @@ class WarehouseImageInline(admin.TabularInline):
 @admin.register(Warehouse)
 class WarehouseAdmin(admin.ModelAdmin):
     list_display = (
+        'town',
         'warehouse_image_preview', 
         'address', 
         'unit_size_category', 
@@ -30,7 +31,7 @@ class WarehouseAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('address', 'unit_size_category', 'temperature'),
+            'fields': ('town', 'address', 'unit_size_category', 'temperature'),
             'description': 'Базовые параметры склада.'
         }),
         ('Экономика и Вместимость', {

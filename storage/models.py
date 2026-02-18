@@ -9,6 +9,7 @@ class Warehouse(models.Model):
         ('medium', 'До 10 м²'),
         ('large', 'От 10 м²'),
     ]
+    town = models.CharField(max_length=255, verbose_name="Расположение")
     address = models.CharField(max_length=255, verbose_name="Адрес склада")    
     description = models.TextField(verbose_name="Описание склада", blank=True)
     directions = models.TextField(verbose_name="Инструкция по проезду", blank=True)
