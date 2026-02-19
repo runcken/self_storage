@@ -17,6 +17,18 @@ class Profile(models.Model):
         verbose_name='Пользователь'
     )
     
+    first_name = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name='Имя'
+    )
+    
+    last_name = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name='Фамилия'
+    )
+    
     # Контактные данные
     phone = models.CharField(
         max_length=15,
