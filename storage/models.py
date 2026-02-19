@@ -1,60 +1,157 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
+from django.db.models import F, Sum
 from datetime import date
+from django.utils.html import format_html
+
 
 class Warehouse(models.Model):
-    SIZE_CHOICES = [
-        ('small', 'До 3 м²'),
-        ('medium', 'До 10 м²'),
-        ('large', 'От 10 м²'),
-    ]
     town = models.CharField(max_length=255, verbose_name="Расположение")
     address = models.CharField(max_length=255, verbose_name="Адрес склада")    
     description = models.TextField(verbose_name="Описание склада", blank=True)
     directions = models.TextField(verbose_name="Инструкция по проезду", blank=True)
     contacts = models.TextField(verbose_name="Контакты склада", blank=True)
     temperature = models.CharField(
-        max_length=50, 
-        verbose_name="Температурный режим", 
+        max_length=50,
+        verbose_name="Температурный режим",
         default="17 °С",
         help_text="Например: 17 °С или 15-20 °С"
     )
     ceiling_height = models.DecimalField(
         max_digits=5,
         decimal_places=2,
-        verbose_name="Высота потолка (м)"
-    )
-    cost_per_unit = models.DecimalField(
-        max_digits=10, decimal_places=2, 
-        verbose_name="Стоимость одного места (руб.)",
-        validators=[MinValueValidator(0)]
-    )
-    unit_size_category = models.CharField(
-        max_length=10,
-        choices=SIZE_CHOICES,
-        verbose_name="Категория размера места"
-    )
-    total_units = models.PositiveIntegerField(
-        default=0,
-        verbose_name="Общее количество мест"
-    )
-    occupied_units = models.PositiveIntegerField(
-        default=0,
-        verbose_name="Количество занятых мест"
+        verbose_name="Высота потолка всего зала (м)"
     )
 
     class Meta:
         verbose_name = "Склад"
         verbose_name_plural = "Склады"
-        ordering = ['address']
+        ordering = ['town', 'address']
 
     def __str__(self):
-        return self.address
+        return f"{self.town}, {self.address}"
+
+    @property
+    def total_units(self):
+        from .models import Box
+        return Box.objects.filter(box_type__warehouse=self).count()
+
+    @property
+    def occupied_units(self):
+        from .models import Box
+        return Box.objects.filter(box_type__warehouse=self, status='occupied').count()
 
     @property
     def free_units(self):
-        return max(0, self.total_units - self.occupied_units)
+        from .models import Box
+        return Box.objects.filter(box_type__warehouse=self, status='free').count()
+
+    @property
+    def min_price(self):
+        free_box = Box.objects.filter(box_type__warehouse=self, status='free').order_by('box_type__price').first()
+        return free_box.box_type.price if free_box else 0
+
+
+class BoxType(models.Model):
+    SIZE_CATEGORY_CHOICES = [
+        ('small', 'До 3м³'),
+        ('medium', 'До 10м³'),
+        ('large', 'Свыше 10м³'),
+    ]
+
+    warehouse = models.ForeignKey(
+        Warehouse,
+        on_delete=models.CASCADE,
+        related_name='box_types',
+        verbose_name='Склад'
+    )
+    length = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        verbose_name="Длина (м)",
+        validators=[MinValueValidator(0.1)]
+    )
+    width = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        verbose_name="Ширина (м)",
+        validators=[MinValueValidator(0.1)]
+    )
+    height = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        verbose_name="Высота (м)",
+        validators=[MinValueValidator(0.1)]
+    )
+    volume = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        verbose_name="Объем (м³)",
+        editable=False
+    )
+    category = models.CharField(
+        max_length=10,
+        choices=SIZE_CATEGORY_CHOICES,
+        verbose_name="Категория объема",
+        editable=False
+    )
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Стоимость аренды (руб/мес)",
+        validators=[MinValueValidator(0)]
+    )
+    total_count = models.PositiveIntegerField(default=0)
+    occupied_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Тип бокса"
+        verbose_name_plural = "Типы боксов"
+        ordering = ['volume']
+
+    def __str__(self):
+        return f"{self.volume}м³ ({self.length}x{self.width}x{self.height}м)"
+
+
+class Box(models.Model):
+    STATUS_CHOICES = [
+        ('free', 'Свободен'),
+        ('occupied', 'Занят'),
+        ('maintenance', 'На обслуживании'),
+    ]
+
+    box_type = models.ForeignKey(
+        BoxType,
+        on_delete=models.CASCADE,
+        related_name='boxes',
+        verbose_name="Тип бокса")
+    number = models.CharField(max_length=10, verbose_name="Номер бокса")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='free',
+        verbose_name="Статус"
+    )
+    
+    current_agreement = models.ForeignKey(
+        'RentalAgreement', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='boxes_rented',
+        verbose_name="Текущий договор"
+    )
+
+    class Meta:
+        verbose_name = "Бокс"
+        verbose_name_plural = "Боксы"
+        ordering = ['number']
+        unique_together = ('box_type', 'number')
+
+    def __str__(self):
+        return f"Бокс №{self.number} ({self.box_type.volume}м³) - {self.get_status_display()}"
+
 
 class WarehouseImage(models.Model):
     warehouse = models.ForeignKey(
@@ -93,7 +190,7 @@ class Client(models.Model):
     full_name = models.CharField(max_length=255, verbose_name="ФИО")
     address = models.CharField(max_length=255, verbose_name="Адрес клиента")
     phone = models.CharField(max_length=20, verbose_name="Телефон")
-    email = models.EmailField(verbose_name="Электронная почта")
+    email = models.EmailField(verbose_name="Email")
 
     class Meta:
         verbose_name = "Клиент"
@@ -105,15 +202,18 @@ class Client(models.Model):
 
     @property
     def total_active_units(self):
-        active = self.agreements.filter(status='active')
-        return sum(ag.units_count for ag in active)
+        active_agreements = self.agreements.filter(status='active')
+        total = 0
+        for agreement in active_agreements:
+            total += agreement.boxes.count()
+        return total
 
 
 class RentalAgreement(models.Model):
     STATUS_CHOICES = [
         ('active', 'Активен'),
         ('completed', 'Завершен'),
-        ('cancelled', 'Завершен')
+        ('cancelled', 'Отменен')
     ]
 
     client = models.ForeignKey(
@@ -128,10 +228,13 @@ class RentalAgreement(models.Model):
         related_name='agreements',
         verbose_name="Склад"
     )
-    units_count = models.PositiveIntegerField(
-        verbose_name="Количество мест",
-        validators=[MinValueValidator(1)]
-    )
+    boxes = models.ManyToManyField(
+        Box,
+        related_name='agreements',
+        verbose_name="Арендуемые боксы",
+        # null=True,
+        blank=True
+        )
     start_date = models.DateField(
         verbose_name="Дата начала",
         default=date.today
@@ -140,7 +243,6 @@ class RentalAgreement(models.Model):
         verbose_name="Дата окончания",
         null=True,
         blank=True,
-        help_text="Оставьте пустым для бессрочной аренды"
     )
     status = models.CharField(
         max_length=20,
@@ -158,4 +260,7 @@ class RentalAgreement(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.client.full_name} -> {self.warehouse.address}"
+        boxes_info = ", ".join([b.number for b in self.boxes.all()[:3]])
+        if self.boxes.count() > 3:
+            boxes_info += "..."
+        return f"{self.client.full_name} -> Боксы: {boxes_info}"
