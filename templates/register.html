@@ -18,12 +18,12 @@
                     {% endfor %}
                 {% endif %}
                 
-                <form method="post">
+                <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     
                     <!-- Имя пользователя -->
                     <div class="mb-3">
-                        <label class="form-label">Имя пользователя</label>
+                        <label class="form-label">{{ form.username.label }}</label>
                         {{ form.username }}
                         {% if form.username.errors %}
                             <div class="text-danger small mt-1">
@@ -34,9 +34,35 @@
                         {% endif %}
                     </div>
                     
+                    <!-- Имя -->
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.first_name.label }}</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.first_name.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Фамилия -->
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.last_name.label }}</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.last_name.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
                     <!-- Email -->
                     <div class="mb-3">
-                        <label class="form-label">Email</label>
+                        <label class="form-label">{{ form.email.label }}</label>
                         {{ form.email }}
                         {% if form.email.errors %}
                             <div class="text-danger small mt-1">
@@ -52,11 +78,7 @@
                         <label class="form-label">Телефон</label>
                         {{ form.phone }}
                         {% if form.phone.errors %}
-                            <div class="text-danger small mt-1">
-                                {% for error in form.phone.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
+                            <div class="text-danger small mt-1">{{ form.phone.errors }}</div>
                         {% endif %}
                     </div>
                     
@@ -65,17 +87,23 @@
                         <label class="form-label">Адрес доставки</label>
                         {{ form.address }}
                         {% if form.address.errors %}
-                            <div class="text-danger small mt-1">
-                                {% for error in form.address.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
+                            <div class="text-danger small mt-1">{{ form.address.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Аватар -->
+                    <div class="mb-3">
+                        <label class="form-label">Аватар</label>
+                        {{ form.avatar }}
+                        <small class="text-muted d-block mt-1">{{ form.avatar.help_text }}</small>
+                        {% if form.avatar.errors %}
+                            <div class="text-danger small mt-1">{{ form.avatar.errors }}</div>
                         {% endif %}
                     </div>
                     
                     <!-- Пароль -->
                     <div class="mb-3">
-                        <label class="form-label">Пароль</label>
+                        <label class="form-label">{{ form.password1.label }}</label>
                         {{ form.password1 }}
                         {% if form.password1.errors %}
                             <div class="text-danger small mt-1">
@@ -84,14 +112,12 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <small class="text-muted">
-                            Минимум 8 символов
-                        </small>
+                        <small class="text-muted">Минимум 8 символов</small>
                     </div>
                     
                     <!-- Подтверждение пароля -->
                     <div class="mb-3">
-                        <label class="form-label">Подтверждение пароля</label>
+                        <label class="form-label">{{ form.password2.label }}</label>
                         {{ form.password2 }}
                         {% if form.password2.errors %}
                             <div class="text-danger small mt-1">
@@ -106,7 +132,10 @@
                     <div class="form-check mb-4">
                         {{ form.pdn_accepted }}
                         <label for="{{ form.pdn_accepted.id_for_label }}" class="form-check-label">
-                            Согласен на обработку персональных данных
+                            {{ form.pdn_accepted.label }}
+                            <a href="{% static 'files/pdn.pdf' %}" target="_blank" class="text-decoration-none">
+                                (ознакомиться с документом)
+                            </a>
                         </label>
                         {% if form.pdn_accepted.errors %}
                             <div class="text-danger small mt-1">

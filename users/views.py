@@ -6,6 +6,11 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
+from django.utils import timezone
+from django.core.files.base import ContentFile
+from io import BytesIO
+import qrcode
+import base64
 from .forms import UserRegistrationForm, UserLoginForm
 from .models import Profile
 
@@ -31,27 +36,13 @@ def register_view(request):
     После успешной регистрации происходит автоматический вход
     и редирект в личный кабинет
     """
-    # Если пользователь уже авторизован — перенаправляем в ЛК
     if request.user.is_authenticated:
         return redirect('cabinet')
     
     if request.method == 'POST':
-        form = UserRegistrationForm(request.POST)
+        form = UserRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
-            user = form.save(commit=False)
-            user.email = form.cleaned_data['email']
-            user.first_name = form.cleaned_data.get('first_name', '')
-            user.last_name = form.cleaned_data.get('last_name', '')
-            user.save()
-            
-            # Создаём профиль вручную (без сигналов)
-            Profile.objects.create(
-                user=user,
-                phone=form.cleaned_data['phone'],
-                address=form.cleaned_data['address'],
-                pdn_accepted=form.cleaned_data['pdn_accepted']
-            )
-            
+            user = form.save()
             login(request, user)
             messages.success(
                 request,
@@ -74,16 +65,16 @@ def login_view(request):
     Вьюха входа пользователя
     Поддерживает вход по имени пользователя или email
     """
-    # Если пользователь уже авторизован — перенаправляем в ЛК
     if request.user.is_authenticated:
         return redirect('cabinet')
     
     if request.method == 'POST':
         form = UserLoginForm(request, data=request.POST)
         if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
+            # username = form.cleaned_data.get('username')
+            # password = form.cleaned_data.get('password')
+            # user = authenticate(username=username, password=password)
+            user = form.user_cache
             
             if user is not None:
                 login(request, user)
@@ -119,8 +110,73 @@ def cabinet_view(request):
     """
     profile = request.user.profile
     
+    # Генерация или получение существующего QR-кода
+    if not profile.qr_code:
+        qr_data = f"user_id:{request.user.id};username:{request.user.username};access:storage"
+        
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Сохраняем в буфер
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+        
+        # Сохраняем в модель
+        qr_image = ContentFile(buffer.getvalue(), name=f'qr_{request.user.id}.png')
+        profile.qr_code.save(f'qr_{request.user.id}.png', qr_image, save=True)
+    
+    # Кодируем в base64 для отображения
+    qr_base64 = None
+    if profile.qr_code:
+        with profile.qr_code.open('rb') as f:
+            qr_base64 = base64.b64encode(f.read()).decode('utf-8')
+    
+    context = {
+        'profile': profile,
+        'user': request.user,
+        'qr_code': qr_base64,
+    }
+    return render(request, 'cabinet.html', context)
+
+
+@login_required
+def edit_profile_view(request):
+    """
+    Вьюха редактирования профиля
+    """
+    profile = request.user.profile
+    
+    if request.method == 'POST':
+        # Обновляем данные пользователя
+        request.user.first_name = request.POST.get('first_name', request.user.first_name)
+        request.user.last_name = request.POST.get('last_name', request.user.last_name)
+        request.user.email = request.POST.get('email', request.user.email)
+        request.user.save()
+        
+        # Обновляем данные профиля
+        profile.phone = request.POST.get('phone', profile.phone)
+        profile.address = request.POST.get('address', profile.address)
+        
+        # Обновляем аватар, если загружен новый
+        if 'avatar' in request.FILES:
+            profile.avatar = request.FILES['avatar']
+        
+        profile.save()
+        
+        messages.success(request, 'Данные профиля успешно обновлены.')
+        return redirect('cabinet')
+    
     context = {
         'profile': profile,
         'user': request.user,
     }
-    return render(request, 'cabinet.html', context)
+    return render(request, 'edit_profile.html', context)

@@ -1,7 +1,5 @@
-# Маршруты приложения пользователей
 from django.urls import path
 from . import views
-
 
 urlpatterns = [
     # Основные страницы
@@ -16,4 +14,5 @@ urlpatterns = [
     
     # Личный кабинет
     path('cabinet/', views.cabinet_view, name='cabinet'),
+    path('cabinet/edit/', views.edit_profile_view, name='edit_profile'),
 ]
