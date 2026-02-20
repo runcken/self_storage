@@ -2,8 +2,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from django.db.models import F, Sum
-from datetime import date
+from datetime import date, timedelta
 from django.utils.html import format_html
+from decimal import Decimal
 
 
 class Warehouse(models.Model):
@@ -213,7 +214,8 @@ class RentalAgreement(models.Model):
     STATUS_CHOICES = [
         ('active', 'Активен'),
         ('completed', 'Завершен'),
-        ('cancelled', 'Отменен')
+        ('cancelled', 'Отменен'),
+        ('overdue', 'Просрочен')
     ]
 
     client = models.ForeignKey(
@@ -264,6 +266,39 @@ class RentalAgreement(models.Model):
         if self.boxes.count() > 3:
             boxes_info += "..."
         return f"{self.client.full_name} -> Боксы: {boxes_info}"
+
+    @property
+    def is_overdue(self):
+        """Проверяет, просрочен ли договор"""
+        if not self.end_date or self.status != 'active':
+            return False
+        return date.today() > self.end_date
+
+    @property
+    def is_grace_period_expired(self):
+        if not self.end_date:
+            return False
+        grace_deadline = self.end_date + timedelta(days=180)
+        return date.today() > grace_deadline
+
+    def get_current_price_multiplier(self):
+        if self.is_overdue and self.status == 'active':
+            return Decimal('1.25')
+        return Decimal('1.0')
+
+    def get_total_monthly_cost(self):
+        base_cost = sum(box.box_type.price for box in self.boxes.all())
+        multiplier = self.get_current_price_multiplier()
+        return base_cost * multiplier
+
+    def get_total_monthly_cost_display(self):
+        cost = self.get_total_monthly_cost()
+        suffix = ""
+        if self.is_overdue and not self.is_grace_period_expired:
+            suffix = " (с наценкой 25%)"
+        elif self.is_grace_period_expired:
+            suffix = " (СРОЧНО ОСВОБОДИТЬ)"
+        return f"{cost:.2f} руб{suffix}"
 
 
 class AdTransition(models.Model):

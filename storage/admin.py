@@ -199,7 +199,15 @@ class RentalAgreementForm(forms.ModelForm):
 @admin.register(RentalAgreement)
 class RentalAgreementAdmin(admin.ModelAdmin):
     form = RentalAgreementForm
-    list_display = ('client', 'warehouse', 'get_boxes_list', 'status', 'start_date', 'is_expired_display')
+    list_display = (
+        'client',
+        'warehouse',
+        'get_boxes_list',
+        'status',
+        'start_date',
+        'is_expired_display',
+        'get_price_with_penalty'
+    )
     list_filter = ('status', RentStatusFilter, 'warehouse', 'boxes__status')
     search_fields = ('client__full_name', 'warehouse__address')
     
@@ -207,13 +215,26 @@ class RentalAgreementAdmin(admin.ModelAdmin):
         ('Стороны договора', {'fields': ('client', 'warehouse')}),
         ('Предмет аренды', {'fields': ('boxes',)}),
         ('Сроки и статус', {'fields': ('start_date', 'end_date', 'status')}),
+        ('Финансы', {
+            'fields': ('display_current_cost',),
+            'description': 'Стоимость'
+            }),
     )
 
+    readonly_fields = ('display_current_cost',)
+
     def get_boxes_list(self, obj):
-        return ", ".join([b.number for b in obj.boxes.all()])
+        if not obj.pk or not hasattr(obj, '_prefetched_objects_cache'):
+            return "-"
+        try:
+            return ", ".join([b.number for b in obj.boxes.all()])
+        except Exception:
+            return "-"
     get_boxes_list.short_description = "Боксы"
 
     def is_expired_display(self, obj):
+        if not obj.pk:
+            return "-"
         if obj.status != 'active':
             return "-"
         if obj.end_date and obj.end_date < date.today():
@@ -222,6 +243,51 @@ class RentalAgreementAdmin(admin.ModelAdmin):
             return format_html('<span style="color:orange;">{}</span>', "Заканчивается сегодня")
         return format_html('<span style="color:green;">{}</span>', "OK")
     is_expired_display.short_description = "Статус срока"
+
+    def get_price_with_penalty(self, obj):
+        if not obj.pk:
+            return "-"
+        try:
+            cost = obj.get_total_monthly_cost()
+            if obj.is_overdue and not obj.is_grace_period_expired:
+                return format_html('<span style="color:orange; font-weight:bold;">{} ₽ ( +25%)</span>', cost)
+            elif obj.is_grace_period_expired:
+                return format_html('<span style="color:red; font-weight:bold;">{} ₽ (ИСТЕК СРОК)</span>', cost)
+            return f"{cost} ₽"
+        except Exception:
+            return "-"
+    get_price_with_penalty.short_description = "Стоимость/мес"
+
+    # def is_overdue_warning(self, obj):
+    #     if not obj.pk or not obj.end_date:
+    #         return "-"
+    #     try:
+    #         if obj.is_grace_period_expired:
+    #             return format_html('<span style="color:red; font-weight:bold;">ОСВОБОДИТЬ СРОЧНО</span>')
+    #         if obj.is_overdue:
+    #             days_overdue = (date.today() - obj.end_date).days
+    #             return format_html('<span style="color:orange;">Просрочен на {} дн.</span>', days_overdue)
+    #         return "-"
+    #     except Exception:
+    #         return "-"
+    # is_overdue_warning.short_description = "Статус срока"
+
+    def display_current_cost(self, obj):
+        if not obj.pk:
+            return "Сохраните договор, чтобы увидеть расчет стоимости"
+        try:
+            base = sum(b.box_type.price for b in obj.boxes.all())
+            mult = obj.get_current_price_multiplier()
+            total = base * mult
+        
+            text = f"Базовая цена: {base} руб.\n"
+            if mult > 1:
+                text += f"Коэффициент просрочки: x{mult}\n"
+            text += f"Итого к оплате: {total} руб."
+            return text
+        except Exception:
+            return "Ошибка расчета"
+    display_current_cost.short_description = "Детали расчета"   
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
@@ -238,15 +304,18 @@ class ClientAdmin(admin.ModelAdmin):
     total_active_units.admin_order_field = 'id'
 
 
-@admin.register(AdTransition)
-class AdTransitionAdmin(admin.ModelAdmin):
-    list_display = (
-        'created_at',
-        'source',
-        'medium',
-        'campaign',
-        'session_key',
-        'client'
-    )
-    list_filter = ('source', 'medium', 'created_at')
-    search_fields = ('campaign', 'session_key', 'client__full_name')
+# @admin.register(AdTransition)
+# """
+# счетчик рекламных переходов
+# """
+# class AdTransitionAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'created_at',
+#         'source',
+#         'medium',
+#         'campaign',
+#         'session_key',
+#         'client'
+#     )
+#     list_filter = ('source', 'medium', 'created_at')
+#     search_fields = ('campaign', 'session_key', 'client__full_name')
