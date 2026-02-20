@@ -5,7 +5,7 @@ from django.db.models import F, Q
 from django.utils.safestring import mark_safe
 from django import forms
 from datetime import date
-from .models import Warehouse, BoxType, Box, WarehouseImage, Client, RentalAgreement
+from .models import Warehouse, BoxType, Box, WarehouseImage, Client, RentalAgreement, AdTransition
 
 
 class RentStatusFilter(admin.SimpleListFilter):
@@ -236,3 +236,17 @@ class ClientAdmin(admin.ModelAdmin):
         return obj.total_active_units
     total_active_units.short_description = "Активных мест"
     total_active_units.admin_order_field = 'id'
+
+
+@admin.register(AdTransition)
+class AdTransitionAdmin(admin.ModelAdmin):
+    list_display = (
+        'created_at',
+        'source',
+        'medium',
+        'campaign',
+        'session_key',
+        'client'
+    )
+    list_filter = ('source', 'medium', 'created_at')
+    search_fields = ('campaign', 'session_key', 'client__full_name')

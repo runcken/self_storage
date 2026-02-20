@@ -264,3 +264,63 @@ class RentalAgreement(models.Model):
         if self.boxes.count() > 3:
             boxes_info += "..."
         return f"{self.client.full_name} -> Боксы: {boxes_info}"
+
+
+class AdTransition(models.Model):
+    SOURCE_CHOICES = [
+        ('yandex', 'Яндекс.Директ'),
+        ('google', 'Google Ads'),
+        ('vk', 'VK Реклама'),
+        ('telegram', 'Telegram')
+    ]
+
+    session_key = models.CharField(
+        max_length=100, 
+        db_index=True,
+        help_text="ID сессии пользователя"
+    )
+    source = models.CharField(
+        max_length=50,
+        choices=SOURCE_CHOICES,
+        verbose_name="Источник"
+    )
+    medium = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Тип трафика (utm_medium)"
+    )
+    campaign = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Компания (utm_campaign)"
+    )
+    term = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Ключевое слово (utm_term)"
+    )
+    content = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Контент (utm_content)"
+    )
+    landing_page = models.URLField(verbose_name="Страница входа")
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата перехода"
+    )
+    client = models.ForeignKey(
+        'Client',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ad_transitions'
+        )
+
+    class Meta:
+        verbose_name = "Рекламный переход"
+        verbose_name_plural = "Рекламные переходы"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.get_source_display()} -> {self.session_key} ({self.created_at})"

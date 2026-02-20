@@ -4,21 +4,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (!warehouseSelect || !boxesSelect) return;
 
-    // Функция загрузки боксов
     function loadBoxes() {
         const warehouseId = warehouseSelect.value;
         
         if (!warehouseId) {
-            // Если склад не выбран, очищаем список боксов
             boxesSelect.innerHTML = '<option value="">-- Сначала выберите склад --</option>';
             return;
         }
 
-        // Показываем пользователю, что идет загрузка
         const originalOptions = boxesSelect.innerHTML;
         boxesSelect.innerHTML = '<option value="">Загрузка...</option>';
 
-        // Делаем AJAX запрос
         fetch(`/storage/ajax/get-boxes/?warehouse_id=${warehouseId}`)
             .then(response => response.json())
             .then(data => {
@@ -45,12 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Слушаем изменение склада
     warehouseSelect.addEventListener('change', loadBoxes);
 
-    // Если мы редактируем существующий договор и склад уже выбран, 
-    // можно попробовать загрузить боксы сразу (опционально)
-    // if (warehouseSelect.value) {
-    //    loadBoxes();
-    // }
+
 });
