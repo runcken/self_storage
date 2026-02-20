@@ -10,6 +10,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('', views.index, name='index'),
     path('', include('users.urls')),
+    path('storage/', include('storage.urls')),
 ]
 
 if settings.DEBUG:

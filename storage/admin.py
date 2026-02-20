@@ -1,8 +1,53 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.db.models import F
+from django.urls import reverse
+from django.db.models import F, Q
+from django.utils.safestring import mark_safe
 from django import forms
+from datetime import date
 from .models import Warehouse, BoxType, Box, WarehouseImage, Client, RentalAgreement
+
+
+class RentStatusFilter(admin.SimpleListFilter):
+    title = 'Статус аренды'
+    parameter_name = 'rent_status'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('active', 'Активные'),
+            ('expired', 'Просроченные'),
+            ('future', 'Будущие'),
+            ('indefinite', 'Бессрочные'),
+        )
+
+    def queryset(self, request, queryset):
+        today = date.today()
+
+        if self.value() == 'active':
+            return queryset.filter(
+                status='active'
+            ).filter(
+                Q(end_date__isnull=True) | Q(end_date__gte=today)
+            )
+
+        if self.value() == 'expired':
+            return queryset.filter(
+                status='active',
+                end_date__lt=today
+            )
+
+        if self.value() == 'future':
+            return queryset.filter(
+                start_date__gt=today
+            )
+
+        if self.value() == 'indefinite':
+            return queryset.filter(
+                status='active',
+                end_date__isnull=True
+            )
+
+        return queryset
 
 
 class BoxTypeInline(admin.StackedInline):
@@ -72,7 +117,6 @@ class WarehouseAdmin(admin.ModelAdmin):
     def get_total_boxes(self, obj):
         from .models import Box
         count = Box.objects.filter(box_type__warehouse_id=obj.id).count()
-        print(f"ADMIN DEBUG TOTAL: ID={obj.id}, Count={count}")
         return count
     get_total_boxes.short_description = "Всего боксов"
     get_total_boxes.admin_order_field = 'id'
@@ -87,7 +131,6 @@ class WarehouseAdmin(admin.ModelAdmin):
     def get_free_boxes(self, obj):
         from .models import Box
         count = Box.objects.filter(box_type__warehouse_id=obj.id, status='free').count()
-        print(f"DEBUG ADMIN FREE: ID={obj.id}, ID={obj.id}. Free={count}")
         return count
     get_free_boxes.short_description = "Свободно"
     get_free_boxes.admin_order_field = 'id'
@@ -140,26 +183,24 @@ class RentalAgreementForm(forms.ModelForm):
         model = RentalAgreement
         fields = '__all__'
         widgets = {
-            'boxes': forms.SelectMultiple(attrs={'class': 'selectfilter', 'data-field-name': 'боксы', 'data-is-stacked': '0'}),
+            'boxes': forms.SelectMultiple(attrs={
+                'class': 'selectfilter',
+                'data-field-name': 'боксы', 
+                'data-is-stacked': '0',
+                'id': 'id_boxes_select'
+            }),
+            'warehouse': forms.Select(attrs={'id': 'id_warehouse_select'})
         }
 
-    def clean_boxes(self):
-        boxes = self.cleaned_data.get('boxes')
-        warehouse = self.cleaned_data.get('warehouse')
-        if warehouse and boxes:
-            valid_boxes_ids = boxes.filter(box_type__warehouse=warehouse).values_list('id', flat=True)
-            selected_ids = [b.id for b in boxes]
-            invalid_ids = set(selected_ids) - set(valid_boxes_ids)
-            if invalid_ids:
-                raise forms.ValidationError("Выбраны боксы, не принадлежащие указанному складу")
+    class Media:
+        js = ('storage/js/dependent_boxes.js',)
 
-        return boxes
 
 @admin.register(RentalAgreement)
 class RentalAgreementAdmin(admin.ModelAdmin):
     form = RentalAgreementForm
-    list_display = ('client', 'warehouse', 'get_boxes_list', 'status', 'start_date')
-    list_filter = ('status', 'warehouse', 'boxes__status')
+    list_display = ('client', 'warehouse', 'get_boxes_list', 'status', 'start_date', 'is_expired_display')
+    list_filter = ('status', RentStatusFilter, 'warehouse', 'boxes__status')
     search_fields = ('client__full_name', 'warehouse__address')
     
     fieldsets = (
@@ -171,6 +212,19 @@ class RentalAgreementAdmin(admin.ModelAdmin):
     def get_boxes_list(self, obj):
         return ", ".join([b.number for b in obj.boxes.all()])
     get_boxes_list.short_description = "Боксы"
+
+    def is_expired_display(self, obj):
+        if obj.status != 'active':
+            return "-"
+        if obj.end_date and obj.end_date < date.today():
+            return format_html('<span style="color:red;">{}</span>', "Просрочен")
+        if obj.end_date and obj.end_date == date.today():
+            return format_html('<span style="color:orange;">{}</span>', "Заканчивается сегодня")
+        return format_html('<span style="color:green;">{}</span>', "OK")
+    is_expired_display.short_description = "Статус срока"
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Client)
