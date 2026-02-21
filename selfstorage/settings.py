@@ -93,6 +93,13 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
-MEDIA_URL = '/media/'
+# Настройки входа/выхода
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/cabinet/'
+LOGOUT_REDIRECT_URL = '/'
 
+# Настройки медиа и статики
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

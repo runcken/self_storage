@@ -1,5 +1,10 @@
 <!DOCTYPE html>
+{% extends 'base.html' %}
 {% load static %}
+
+{% block title %}Аренда бокса — SelfStorage{% endblock %}
+
+{% block content %}
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
@@ -8,7 +13,7 @@
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 	<link rel="stylesheet" href="{% static 'style.css' %}">
 	<title>Boxes</title>
-</head>
+{% comment %} </head>
 <body>
 <header class="navbar navbar-expand-xl navbar-light fixed-top bg-white py-5">
 	<nav class="container">
@@ -100,7 +105,7 @@
 			</div>
 		</div>
 	</div>
-</aside>
+</aside> {% endcomment %}
 <main class="container mt-header">
 	<article class="row">
 		<div class="col-12 col-lg-6 mb-3 mb-lg-0">
@@ -122,7 +127,7 @@
 			<li class="nav-item flex-grow-1 mx-2" role="presentation">
 				<a href="#BOX" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink" id="pills-Moscow-tab" data-bs-toggle="pill" data-bs-target="#pills-Moscow" role="tab" aria-controls="pills-Moscow" aria-selected="true">
 					<div class="col-12 col-lg-3 d-flex justify-content-center">
-						<img src="img/image11.png" alt="" class="mb-3 mb-lg-0">
+						<img src="{% static 'img/image11.png' %}" alt="" class="mb-3 mb-lg-0">
 					</div>
 					<div class="col-12 col-md-4 col-lg-3 d-flex flex-column justify-content-center">
 						<h4 class="text-center">Москва</h4>
@@ -141,7 +146,7 @@
 			<li class="nav-item flex-grow-1 mx-2" role="presentation">
 				<a href="#BOX" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink" id="pills-Odintsovo-tab" data-bs-toggle="pill" data-bs-target="#pills-Odintsovo" role="tab" aria-controls="pills-Odintsovo" aria-selected="true">
 					<div class="col-12 col-lg-3 d-flex justify-content-center">
-						<img src="img/image9.png" alt="" class="mb-3 mb-lg-0">
+						<img src="{% static 'img/image9.png' %}" alt="" class="mb-3 mb-lg-0">
 					</div>
 					<div class="col-12 col-md-4 col-lg-3 d-flex flex-column justify-content-center">
 						<h4 class="text-center">Одинцово</h4>
@@ -160,7 +165,7 @@
 			<li class="nav-item flex-grow-1 mx-2" role="presentation">
 				<a href="#BOX" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink" id="pills-Pushkino-tab" data-bs-toggle="pill" data-bs-target="#pills-Pushkino" role="tab" aria-controls="pills-Pushkino" aria-selected="true">
 					<div class="col-12 col-lg-3 d-flex justify-content-center">
-						<img src="img/image15.png" alt="" class="mb-3 mb-lg-0">
+						<img src="{% static 'img/image15.png' %}" alt="" class="mb-3 mb-lg-0">
 					</div>
 					<div class="col-12 col-md-4 col-lg-3 d-flex flex-column justify-content-center">
 						<h4 class="text-center">Пушкино</h4>
@@ -179,7 +184,7 @@
 			<li class="nav-item flex-grow-1 mx-2" role="presentation">
 				<a href="#BOX" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink" id="pills-Lubertsi-tab" data-bs-toggle="pill" data-bs-target="#pills-Lubertsi" role="tab" aria-controls="pills-Lubertsi" aria-selected="true">
 					<div class="col-12 col-lg-3 d-flex justify-content-center">
-						<img src="img/image151.png" alt="" class="mb-3 mb-lg-0">
+						<img src="{% static 'img/image151.png' %}" alt="" class="mb-3 mb-lg-0">
 					</div>
 					<div class="col-12 col-md-4 col-lg-3 d-flex flex-column justify-content-center">
 						<h4 class="text-center">Люберцы</h4>
@@ -198,7 +203,7 @@
 			<li class="nav-item flex-grow-1 mx-2" role="presentation">
 				<a href="#BOX" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink" id="pills-Domodedovo-tab" data-bs-toggle="pill" data-bs-target="#pills-Domodedovo" role="tab" aria-controls="pills-Domodedovo" aria-selected="true">
 					<div class="col-12 col-lg-3 d-flex justify-content-center">
-						<img src="img/image16.png" alt="" class="mb-3 mb-lg-0">
+						<img src="{% static 'img/image16.png' %}" alt="" class="mb-3 mb-lg-0">
 					</div>
 					<div class="col-12 col-md-4 col-lg-3 d-flex flex-column justify-content-center">
 						<h4 class="text-center">Домодедово</h4>
@@ -256,12 +261,12 @@
 							<div class="carousel-inner">
 								<div class="carousel-item active">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 								<div class="carousel-item">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 							</div>
@@ -325,12 +330,12 @@
 							<div class="carousel-inner">
 								<div class="carousel-item active">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 								<div class="carousel-item">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 							</div>
@@ -394,12 +399,12 @@
 							<div class="carousel-inner">
 								<div class="carousel-item active">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 								<div class="carousel-item">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 							</div>
@@ -463,12 +468,12 @@
 							<div class="carousel-inner">
 								<div class="carousel-item active">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 								<div class="carousel-item">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 							</div>
@@ -532,12 +537,12 @@
 							<div class="carousel-inner">
 								<div class="carousel-item active">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 								<div class="carousel-item">
 									<div class="d-flex flex-column align-items-center">
-										<img src="img/image2.png" alt="">
+										<img src="{% static 'img/image2.png' %}" alt="">
 									</div>
 								</div>
 							</div>
@@ -616,7 +621,7 @@
 		</ul>
 		<div class="tab-content" id="pills-tabContent">
 			<div class="tab-pane fade show active" id="pills-all" role="tabpanel" aria-labelledby="pills-home-tab">
-				<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+				<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 					<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 						<span class="SelfStorage_green fs_24 me-2">1 эт.</span><span class="fs_24">№1389-11</span>
 					</div>
@@ -630,7 +635,7 @@
 						<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 2264 ₽</span>
 					</div>
 				</a>
-				<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+				<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 					<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 						<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№2389-13</span>
 					</div>
@@ -645,7 +650,7 @@
 					</div>
 				</a>
 				<div class="collapse" id="collapse-all">
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">1 эт.</span><span class="fs_24">№1234-56</span>
 						</div>
@@ -659,7 +664,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 1234 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№2345-67</span>
 						</div>
@@ -673,7 +678,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 2345 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№3456-78</span>
 						</div>
@@ -687,7 +692,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 3456 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№4567-89</span>
 						</div>
@@ -701,7 +706,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 4567 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№5678-90</span>
 						</div>
@@ -715,7 +720,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 5678 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№6789-10</span>
 						</div>
@@ -729,7 +734,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 6789 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">3 эт.</span><span class="fs_24">№7890-11</span>
 						</div>
@@ -743,7 +748,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 7890 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">3 эт.</span><span class="fs_24">№8901-23</span>
 						</div>
@@ -766,7 +771,7 @@
 				</div>
 			</div>
 			<div class="tab-pane fade" id="pills-to3" role="tabpanel" aria-labelledby="pills-profile-tab">
-				<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+				<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 					<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 						<span class="SelfStorage_green fs_24 me-2">1 эт.</span><span class="fs_24">№1389-11</span>
 					</div>
@@ -782,7 +787,7 @@
 				</a>
 			</div>
 			<div class="tab-pane fade" id="pills-to10" role="tabpanel" aria-labelledby="pills-contact-tab">
-				<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+				<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 					<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 						<span class="SelfStorage_green fs_24 me-2">1 эт.</span><span class="fs_24">№1389-11</span>
 					</div>
@@ -796,7 +801,7 @@
 						<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 2264 ₽</span>
 					</div>
 				</a>
-				<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+				<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 					<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 						<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№2389-13</span>
 					</div>
@@ -811,7 +816,7 @@
 					</div>
 				</a>
 				<div class="collapse" id="collapse-to10">
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">1 эт.</span><span class="fs_24">№1234-56</span>
 						</div>
@@ -825,7 +830,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 1234 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№2345-67</span>
 						</div>
@@ -839,7 +844,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 2345 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№3456-78</span>
 						</div>
@@ -853,7 +858,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 3456 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№4567-89</span>
 						</div>
@@ -867,7 +872,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 4567 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№5678-90</span>
 						</div>
@@ -881,7 +886,7 @@
 							<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 5678 ₽</span>
 						</div>
 					</a>
-					<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+					<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 						<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 							<span class="SelfStorage_green fs_24 me-2">2 эт.</span><span class="fs_24">№6789-10</span>
 						</div>
@@ -904,7 +909,7 @@
 				</div>
 			</div>
 			<div class="tab-pane fade" id="pills-from10" role="tabpanel" aria-labelledby="pills-contact-tab">
-				<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+				<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 					<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 						<span class="SelfStorage_green fs_24 me-2">3 эт.</span><span class="fs_24">№7890-11</span>
 					</div>
@@ -918,7 +923,7 @@
 						<span class="btn my-2 w-100 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange border-8">От 7890 ₽</span>
 					</div>
 				</a>
-				<a href="#" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
+				<a href="{% url 'order' %}" class="row text-decoration-none py-3 px-4 mt-5 SelfStorage__boxlink">
 					<div class="col-12 col-md-4 col-lg-3 d-flex justify-content-center align-items-center">
 						<span class="SelfStorage_green fs_24 me-2">3 эт.</span><span class="fs_24">№8901-23</span>
 					</div>
@@ -936,7 +941,7 @@
 		</div>
 	</article>
 </main>
-<footer class="container py-5">
+{% comment %} <footer class="container py-5">
 	<div class="row mb-5">
 		<div class="col-6 col-md-4 d-flex flex-column mb-3">
 			<a href="#" class="navbar-brand">
@@ -980,7 +985,7 @@
 		</div>
 		<h6 class="SelfStorage_grey text-center mt-5">© 2022 SelfStorage. Использование материалов запрещено без письменного согласия</h6>
 	</div>
-</footer>
+</footer> {% endcomment %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 <script>
 	var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
@@ -990,3 +995,4 @@
 </script>
 </body>
 </html>
+{% endblock %}
