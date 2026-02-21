@@ -256,6 +256,38 @@ class RentalAgreement(models.Model):
         verbose_name="Дата создания"
     )
 
+    reminder_30d_sent = models.BooleanField(
+        default=False, 
+        verbose_name="Напоминание за 30 дней отправлено"
+    )
+    reminder_14d_sent = models.BooleanField(
+        default=False, 
+        verbose_name="Напоминание за 14 дней отправлено"
+    )
+    reminder_7d_sent = models.BooleanField(
+        default=False, 
+        verbose_name="Напоминание за 7 дней отправлено"
+    )
+    reminder_3d_sent = models.BooleanField(
+        default=False, 
+        verbose_name="Напоминание за 3 дня отправлено"
+    )
+    
+    # Для просроченных договоров
+    overdue_notification_sent = models.BooleanField(
+        default=False, 
+        verbose_name="Уведомление о просрочке отправлено"
+    )
+    last_overdue_reminder_sent = models.DateField(
+        null=True, 
+        blank=True, 
+        verbose_name="Дата последнего напоминания о просрочке"
+    )
+    grace_period_notification_sent = models.BooleanField(
+        default=False, 
+        verbose_name="Уведомление о льготном периоде отправлено"
+    )
+
     class Meta:
         verbose_name = "Договор аренды"
         verbose_name_plural = "Договоры аренды"

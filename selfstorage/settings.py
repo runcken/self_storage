@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,6 +22,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "storage.apps.StorageConfig",
+    "selfstorage",
     "users",
 ]
 
@@ -103,3 +106,15 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+load_dotenv()
+gmail_password = os.environ['GMAIL_PASSWORD']
+email_host_user= os.environ['EMAIL_HOST_USER']
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = email_host_user
+EMAIL_HOST_PASSWORD = gmail_password
+DEFAULT_FROM_EMAIL = 'Поддержка <support@SelfStorage.com>'
