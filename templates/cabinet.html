@@ -10,7 +10,7 @@
            class="ps-0 btn bg-white fs_24 shadow-none SelfStorage_orange SelfStorage_tab active">
             Личный кабинет
         </a>
-        <a href="#" 
+        <a href="{% url 'my_rent' %}"
            class="ps-0 btn bg-white fs_24 shadow-none SelfStorage_grey SelfStorage_tab">
             Моя аренда
         </a>
@@ -27,7 +27,6 @@
     <div class="col-lg-9">
         <div class="card p-5">
             <div class="row">
-                <!-- Аватар, имя и кнопка редактирования -->
                 <div class="col-12 col-sm-5 d-flex flex-column align-items-center">
                     <img src="{{ profile.avatar_url }}" 
                          class="rounded-pill mb-3" 
@@ -36,12 +35,10 @@
                          height="150">
                     <h4>{{ user.get_full_name|default:user.username }}</h4>
                     
-                    <!-- Кнопка редактирования -->
                     <a href="{% url 'edit_profile' %}" class="btn SelfStorage_orange mt-3">
                         Редактировать профиль
                     </a>
                     
-                    <!-- QR-код для доступа -->
                     <div class="mt-4 text-center">
                         <h5 class="SelfStorage_green mb-2">Ваш QR-код для доступа</h5>
                         {% if profile.qr_code %}
@@ -58,45 +55,37 @@
                     </div>
                 </div>
                 
-                <!-- Данные профиля -->
                 <div class="col-12 col-sm-7 d-flex flex-column">
-                    <!-- Имя -->
                     <div class="mb-4">
                         <label class="fs_24 SelfStorage_green">Имя</label>
                         <div class="fs_24">{{ user.first_name|default:'Не указано' }}</div>
                     </div>
                     
-                    <!-- Фамилия -->
                     <div class="mb-4">
                         <label class="fs_24 SelfStorage_green">Фамилия</label>
                         <div class="fs_24">{{ user.last_name|default:'Не указана' }}</div>
                     </div>
                     
-                    <!-- Email -->
                     <div class="mb-4">
                         <label class="fs_24 SelfStorage_green">Электронная почта</label>
                         <div class="fs_24">{{ user.email }}</div>
                     </div>
                     
-                    <!-- Телефон -->
                     <div class="mb-4">
                         <label class="fs_24 SelfStorage_green">Телефон</label>
                         <div class="fs_24">{{ profile.phone|default:'Не указан' }}</div>
                     </div>
                     
-                    <!-- Адрес -->
                     <div class="mb-4">
                         <label class="fs_24 SelfStorage_green">Адрес доставки</label>
                         <div class="fs_24">{{ profile.address|default:'Не указан' }}</div>
                     </div>
                     
-                    <!-- Дата регистрации -->
                     <div class="mb-4">
                         <label class="fs_24 SelfStorage_green">Дата регистрации</label>
                         <div class="fs_24">{{ profile.created_at|date:"d.m.Y" }}</div>
                     </div>
                     
-                    <!-- Информация о назначении QR-кода -->
                     <div class="alert alert-info mt-4 p-3">
                         <strong>Как использовать QR-код:</strong><br>
                         • Для сдачи вещей на хранение — покажите код при приёме вещей на складе<br>

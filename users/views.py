@@ -17,12 +17,18 @@ from .models import Profile
 
 def home_view(request):
     """Главная страница сайта"""
-    return render(request, 'index.html')
+    context = {}
+    if request.user.is_authenticated:
+        context['email'] = request.user.email
+    return render(request, 'index.html', context)
 
 
 def boxes_view(request):
     """Страница выбора боксов для хранения"""
-    return render(request, 'boxes.html')
+    context = {}
+    if request.user.is_authenticated:
+        context['email'] = request.user.email
+    return render(request, 'boxes.html', context)
 
 
 def faq_view(request):
@@ -71,9 +77,6 @@ def login_view(request):
     if request.method == 'POST':
         form = UserLoginForm(request, data=request.POST)
         if form.is_valid():
-            # username = form.cleaned_data.get('username')
-            # password = form.cleaned_data.get('password')
-            # user = authenticate(username=username, password=password)
             user = form.user_cache
             
             if user is not None:
@@ -180,3 +183,40 @@ def edit_profile_view(request):
         'user': request.user,
     }
     return render(request, 'edit_profile.html', context)
+
+
+@login_required
+def my_rent_view(request):
+    """
+    Вьюха "Моя аренда" — показывает активные аренды или пустое состояние
+    """
+    from storage.models import RentalAgreement, Client
+    
+    # Получаем или создаем клиента для пользователя
+    client, created = Client.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'full_name': f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username,
+            'email': request.user.email,
+            'phone': getattr(request.user.profile, 'phone', ''),
+            'address': getattr(request.user.profile, 'address', '')
+        }
+    )
+    
+    # Получаем активные аренды
+    active_rentals = RentalAgreement.objects.filter(
+        client=client
+    ).exclude(status__in=['completed', 'cancelled'])
+    
+    if active_rentals.exists():
+        return render(request, 'my-rent.html', {
+            'rentals': active_rentals,
+            'user': request.user,
+            'profile': request.user.profile
+        })
+    
+    # Если аренд нет — показываем пустое состояние
+    return render(request, 'my-rent-empty.html', {
+        'user': request.user,
+        'profile': request.user.profile
+    })

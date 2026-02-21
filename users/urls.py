@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+# app_name = 'users'
+
 urlpatterns = [
     # Основные страницы
     path('', views.home_view, name='home'),
@@ -15,4 +17,5 @@ urlpatterns = [
     # Личный кабинет
     path('cabinet/', views.cabinet_view, name='cabinet'),
     path('cabinet/edit/', views.edit_profile_view, name='edit_profile'),
+    path('my-rent/', views.my_rent_view, name='my_rent'),
 ]
