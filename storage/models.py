@@ -191,7 +191,7 @@ class Client(models.Model):
     full_name = models.CharField(max_length=255, verbose_name="ФИО")
     address = models.CharField(max_length=255, verbose_name="Адрес клиента")
     phone = models.CharField(max_length=20, verbose_name="Телефон")
-    email = models.EmailField(verbose_name="Email")
+    email = models.EmailField(null=True, blank=True ,verbose_name="Email")
 
     class Meta:
         verbose_name = "Клиент"
