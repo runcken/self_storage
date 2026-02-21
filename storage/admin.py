@@ -250,7 +250,7 @@ class RentalAgreementAdmin(admin.ModelAdmin):
         try:
             cost = obj.get_total_monthly_cost()
             if obj.is_overdue and not obj.is_grace_period_expired:
-                return format_html('<span style="color:orange; font-weight:bold;">{} ₽ ( +25%)</span>', cost)
+                return format_html('<span style="color:red; font-weight:bold;">{} ₽ ( +25%)</span>', cost)
             elif obj.is_grace_period_expired:
                 return format_html('<span style="color:red; font-weight:bold;">{} ₽ (ИСТЕК СРОК)</span>', cost)
             return f"{cost} ₽"
