@@ -1,127 +1,155 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Оформление заказа — SelfStorage{% endblock %}
-
 {% block content %}
 <div class="container py-5 mt-header">
     <div class="row justify-content-center">
         <div class="col-md-10">
             <div class="card p-4 shadow">
-                <h2 class="text-center fw-bold SelfStorage_green mb-4">Оформление заказа на аренду бокса</h2>
+                <h2 class="text-center fw-bold SelfStorage_green mb-4">Оформление заказа</h2>
                 
                 {% if messages %}
                     {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} mb-3">
-                            {{ message }}
-                        </div>
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
                     {% endfor %}
                 {% endif %}
                 
-                <form method="post">
+                <div class="mb-4 text-center">
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="mode_switch" id="mode_manual_btn" checked>
+                        <label class="btn btn-outline-success btn-lg" for="mode_manual_btn">
+                            Выбрать конкретный бокс
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="mode_switch" id="mode_auto_btn">
+                        <label class="btn btn-outline-primary btn-lg" for="mode_auto_btn">
+                            Подобрать по размерам
+                        </label>
+                    </div>
+                </div>
+                
+                <form method="post" id="orderForm">
                     {% csrf_token %}
+                    {{ form.mode }}
                     
-                    <!-- Шаг 1: Выбор склада -->
                     <div class="mb-4">
-                        <h4 class="SelfStorage_green mb-3">1. Выберите склад</h4>
+                        <label class="fs-5 fw-bold">Склад</label>
                         {{ form.warehouse }}
-                        {% if form.warehouse.errors %}
-                            <div class="text-danger small mt-1">{{ form.warehouse.errors }}</div>
-                        {% endif %}
-                        
-                        <div class="alert alert-info mt-3 p-3">
-                            <strong>Подсказка:</strong> Все склады имеют температурный режим 17-21°С и высоту потолков до 3.5м. 
-                            Бесплатная доставка от вашего дома включена в стоимость!
-                        </div>
                     </div>
                     
-                    <!-- Шаг 2: Габариты вещей и расчет объема -->
-                    <div class="mb-4">
-                        <h4 class="SelfStorage_green mb-3">2. Укажите габариты ваших вещей</h4>
+                    <div id="manual_block" class="mode-block">
+                        <div class="alert alert-info">
+                            <h5>Доступные боксы на выбранном складе</h5>
+                            <p class="mb-0">Выберите конкретный бокс из списка. Размеры подставятся автоматически.</p>
+                        </div>
                         
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                {{ form.item_length.label_tag }}
-                                {{ form.item_length }}
-                                {% if form.item_length.errors %}
-                                    <div class="text-danger small mt-1">{{ form.item_length.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                {{ form.item_width.label_tag }}
-                                {{ form.item_width }}
-                                {% if form.item_width.errors %}
-                                    <div class="text-danger small mt-1">{{ form.item_width.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                {{ form.item_height.label_tag }}
-                                {{ form.item_height }}
-                                {% if form.item_height.errors %}
-                                    <div class="text-danger small mt-1">{{ form.item_height.errors }}</div>
-                                {% endif %}
+                        <div class="mb-3">
+                            {{ form.selected_box }}
+                            <div id="box_info" class="mt-3 p-3 bg-light rounded" style="display: none;">
                             </div>
                         </div>
                         
-                        <div class="alert alert-warning mt-3 p-3">
-                            <strong>Важно!</strong> Габариты вещей будут замерены на месте сотрудником склада. 
-                            Стоимость аренды может измениться в зависимости от фактического объема хранения.
-                        </div>
-                        
-                        <div class="card bg-light p-3 mt-3">
-                            <h5 class="mb-2">Рассчитанный объем: <span id="calculated-volume">3.00</span> м³</h5>
-                            <p class="mb-0 text-muted">Объем рассчитывается как: длина × ширина × высота</p>
+                        <div class="row mb-3" id="box_dimensions_info">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">Параметры выбранного бокса:</h6>
+                                        <p class="card-text" id="selected_box_details">
+                                            Выберите бокс чтобы увидеть размеры
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- Шаг 3: Срок аренды -->
-                    <div class="mb-4">
-                        <h4 class="SelfStorage_green mb-3">3. Срок аренды</h4>
+                    <div id="auto_block" class="mode-block" style="display: none;">
+                        <div class="alert alert-primary">
+                            <h5>Укажите размеры ваших вещей</h5>
+                            <p class="mb-0">Система автоматически подберёт минимально подходящий бокс.</p>
+                        </div>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.rental_duration.label_tag }}
-                                {{ form.rental_duration }}
-                                {% if form.rental_duration.errors %}
-                                    <div class="text-danger small mt-1">{{ form.rental_duration.errors }}</div>
-                                {% endif %}
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label>{{ form.need_length.label }}</label>
+                                {{ form.need_length }}
+                            </div>
+                            <div class="col-md-4">
+                                <label>{{ form.need_width.label }}</label>
+                                {{ form.need_width }}
+                            </div>
+                            <div class="col-md-4">
+                                <label>{{ form.need_height.label }}</label>
+                                {{ form.need_height }}
                             </div>
                         </div>
                         
-                        <div class="card bg-light p-3 mt-3">
-                            <h5 class="mb-2">Стоимость аренды:</h5>
-                            <p class="mb-1">Ежемесячно: <span id="monthly-price">705.00</span> ₽</p>
-                            <p class="mb-1">Итого за <span id="duration-text">1</span> месяц(ев): <span id="total-price">705.00</span> ₽</p>
-                            <p class="mb-0 text-success">Скидка: <span id="discount-text">0%</span></p>
-                            <p class="mb-0 text-muted small mt-2">
-                                Скидка 10% при аренде от 6 месяцев, 15% при аренде от 12 месяцев
-                            </p>
+                        <div id="auto_result" class="alert alert-success" style="display: none;">
+                            <h6>Подобран бокс:</h6>
+                            <p id="auto_box_info" class="mb-0"></p>
                         </div>
-                    </div>
-                    
-                    <!-- Шаг 4: Дата начала -->
-                    <div class="mb-4">
-                        <h4 class="SelfStorage_green mb-3">4. Дата начала аренды</h4>
-                        {{ form.start_date.label_tag }}
-                        {{ form.start_date }}
-                        {% if form.start_date.errors %}
-                            <div class="text-danger small mt-1">{{ form.start_date.errors }}</div>
-                        {% endif %}
                         
-                        <div class="alert alert-info mt-3 p-3">
-                            <strong>Обратите внимание:</strong> Минимальный срок аренды — 1 месяц. 
-                            Договор автоматически продлевается, если вы не сообщите о расторжении за 10 дней до окончания срока.
+                        <div id="auto_error" class="alert alert-danger" style="display: none;">
+                            <h6> Нет подходящего бокса</h6>
+                            <p id="auto_error_msg" class="mb-0"></p>
+                            <hr>
+                            <p class="mb-0">Переключитесь в режим "Выбрать конкретный бокс" чтобы посмотреть доступные варианты, или выберите другой склад.</p>
                         </div>
                     </div>
                     
-                    <!-- Шаг 5: Согласие на ПДн -->
+                    <hr class="my-4">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="fs-5 fw-bold">Срок аренды</label>
+                            {{ form.rental_duration }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="fs-5 fw-bold">Дата начала</label>
+                            {{ form.start_date }}
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-light mb-4" id="price_preview" style="display: none;">
+                        <div class="card-body">
+                            <h5 class="card-title">Предварительный расчёт</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Бокс:</td>
+                                    <td id="preview_box" class="fw-bold">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Размеры:</td>
+                                    <td id="preview_dims">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Объём:</td>
+                                    <td id="preview_volume">-</td>
+                                </tr>
+                                <tr class="table-success">
+                                    <td>В месяц:</td>
+                                    <td id="preview_monthly" class="fw-bold">-</td>
+                                </tr>
+                                <tr class="table-success">
+                                    <td>Итого:</td>
+                                    <td id="preview_total" class="fw-bold fs-5">-</td>
+                                </tr>
+                                <tr id="discount_row" style="display: none;">
+                                    <td class="text-success">Скидка:</td>
+                                    <td id="preview_discount" class="text-success">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
                     <div class="mb-4">
-                        <h4 class="SelfStorage_green mb-3">5. Согласие на обработку данных</h4>
-                        <div class="form-check mb-3">
+                        <div class="form-check">
                             {{ form.pdn_accepted }}
-                            <label for="{{ form.pdn_accepted.id_for_label }}" class="form-check-label">
+                            <label class="form-check-label" for="{{ form.pdn_accepted.id_for_label }}">
                                 {{ form.pdn_accepted.label }}
-                                <a href="{% static 'files/pdn.pdf' %}" target="_blank" class="text-decoration-none SelfStorage_green ms-1">
+                                <a href="{% static 'files/pdn.pdf' %}" 
+                                target="_blank" 
+                                class="text-decoration-none SelfStorage_green ms-1">
                                     (ознакомиться с документом)
                                 </a>
                             </label>
@@ -131,16 +159,10 @@
                         {% endif %}
                     </div>
                     
-                    <div class="d-grid mt-4">
-                        <button type="submit" class="btn py-3 px-5 text-white fs_24 SelfStorage__bg_orange SelfStorage__btn2_orange">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-lg py-3 text-white SelfStorage__bg_orange" id="submit_btn" disabled>
                             Оформить заказ
                         </button>
-                    </div>
-                    
-                    <div class="text-center mt-3">
-                        <span class="text-muted">
-                            После оформления заказа с вами свяжется менеджер для подтверждения деталей и замера габаритов
-                        </span>
                     </div>
                 </form>
             </div>
@@ -148,81 +170,236 @@
     </div>
 </div>
 
-{% if calculator_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Элементы формы
-    const lengthInput = document.getElementById('id_item_length');
-    const widthInput = document.getElementById('id_item_width');
-    const heightInput = document.getElementById('id_item_height');
-    const durationInput = document.getElementById('id_rental_duration');
+    const modeInput = document.getElementById('id_mode');
+    const manualBtn = document.getElementById('mode_manual_btn');
+    const autoBtn = document.getElementById('mode_auto_btn');
+    const manualBlock = document.getElementById('manual_block');
+    const autoBlock = document.getElementById('auto_block');
     
-    // Элементы для отображения расчетов
-    const volumeElement = document.getElementById('calculated-volume');
-    const monthlyPriceElement = document.getElementById('monthly-price');
-    const totalPriceElement = document.getElementById('total-price');
-    const durationTextElement = document.getElementById('duration-text');
-    const discountTextElement = document.getElementById('discount-text');
+    const warehouseSelect = document.getElementById('id_warehouse');
+    const selectedBox = document.getElementById('id_selected_box');
+    const needLength = document.getElementById('id_need_length');
+    const needWidth = document.getElementById('id_need_width');
+    const needHeight = document.getElementById('id_need_height');
+    const duration = document.getElementById('id_duration');
     
-    // Тарифы за м³ (средние из макета boxes.html)
-    const tariff_small = 470;   // До 3м³: 1408 ₽ / 3м³ ≈ 470 ₽/м³
-    const tariff_medium = 215;  // До 10м³: 2154 ₽ / 10м³ ≈ 215 ₽/м³
-    const tariff_large = 226;   // Свыше 10м³: 2264 ₽ / 10м³ ≈ 226 ₽/м³
+    const boxDetails = document.getElementById('selected_box_details');
+    const autoResult = document.getElementById('auto_result');
+    const autoError = document.getElementById('auto_error');
+    const pricePreview = document.getElementById('price_preview');
+    const submitBtn = document.getElementById('submit_btn');
     
-    // Функция пересчета стоимости
-    function recalculate() {
-        // Получаем значения
-        const length = parseFloat(lengthInput.value) || 0;
-        const width = parseFloat(widthInput.value) || 0;
-        const height = parseFloat(heightInput.value) || 0;
-        const duration = parseInt(durationInput.value) || 1;
+    let warehouseBoxes = {};
+    
+    function setMode(mode) {
+        modeInput.value = mode;
         
-        // Расчет объема
-        const volume = length * width * height;
-        volumeElement.textContent = volume.toFixed(2);
-        
-        // Определение тарифа по объему
-        let basePricePerM3;
-        if (volume <= 3) {
-            basePricePerM3 = tariff_small;
-        } else if (volume <= 10) {
-            basePricePerM3 = tariff_medium;
+        if (mode === 'manual') {
+            manualBlock.style.display = 'block';
+            autoBlock.style.display = 'none';
+            needLength.value = '';
+            needWidth.value = '';
+            needHeight.value = '';
         } else {
-            basePricePerM3 = tariff_large;
+            manualBlock.style.display = 'none';
+            autoBlock.style.display = 'block';
+            selectedBox.value = '';
+            updateBoxInfo();
         }
-        
-        // Расчет ежемесячной стоимости
-        let monthlyPrice = volume * basePricePerM3;
-        
-        // Расчет скидки за долгосрочную аренду
-        let discount = 0;
-        if (duration >= 12) {
-            discount = 0.15;
-        } else if (duration >= 6) {
-            discount = 0.10;
-        }
-        
-        // Применение скидки
-        monthlyPrice = monthlyPrice * (1 - discount);
-        
-        // Итоговая стоимость
-        const totalPrice = monthlyPrice * duration;
-        
-        // Обновление элементов интерфейса
-        monthlyPriceElement.textContent = monthlyPrice.toFixed(2);
-        totalPriceElement.textContent = totalPrice.toFixed(2);
-        durationTextElement.textContent = duration;
-        discountTextElement.textContent = `${Math.round(discount * 100)}%`;
+        checkSubmit();
     }
     
-    // Назначаем обработчики событий
-    [lengthInput, widthInput, heightInput, durationInput].forEach(input => {
-        input.addEventListener('input', recalculate);
+    manualBtn.addEventListener('change', () => setMode('manual'));
+    autoBtn.addEventListener('change', () => setMode('auto'));
+    
+    function loadWarehouseBoxes() {
+        const warehouseId = warehouseSelect.value;
+        if (!warehouseId) {
+            selectedBox.innerHTML = '<option value="">-- Сначала выберите склад --</option>';
+            warehouseBoxes = {};
+            return;
+        }
+        
+        selectedBox.innerHTML = '<option value="">Загрузка...</option>';
+        
+        fetch(`/storage/ajax/get-boxes/?warehouse_id=${warehouseId}`)
+            .then(r => r.json())
+            .then(data => {
+                warehouseBoxes = {};
+                selectedBox.innerHTML = '<option value="">-- Выберите бокс --</option>';
+                
+                data.boxes.forEach(box => {
+                    if (!box.disabled) {
+                        warehouseBoxes[box.id] = box;
+                        const option = document.createElement('option');
+                        option.value = box.id;
+                        const match = box.label.match(/№([\w-]+).*?(\d+\.?\d*)м³/);
+                        const num = match ? match[1] : box.id;
+                        const vol = match ? match[2] : '?';
+                        option.textContent = `№${num} — ${vol}м³`;
+                        selectedBox.appendChild(option);
+                    }
+                });
+                
+                if (data.boxes.length === 0) {
+                    selectedBox.innerHTML = '<option value="">Нет свободных боксов</option>';
+                }
+            });
+    }
+    
+    warehouseSelect.addEventListener('change', () => {
+        loadWarehouseBoxes();
+        autoResult.style.display = 'none';
+        autoError.style.display = 'none';
+        pricePreview.style.display = 'none';
     });
     
-    // Первичный расчет при загрузке страницы
-    recalculate();
+    function updateBoxInfo() {
+        const boxId = selectedBox.value;
+        if (!boxId || !warehouseBoxes[boxId]) {
+            boxDetails.innerHTML = '<span class="text-muted">Выберите бокс чтобы увидеть размеры</span>';
+            pricePreview.style.display = 'none';
+            checkSubmit();
+            return;
+        }
+        
+        fetch(`/storage/ajax/box-details/${boxId}/`)
+            .then(r => r.json())
+            .then(box => {
+                boxDetails.innerHTML = `
+                    <strong>№${box.number}</strong><br>
+                    Размеры: ${box.length}×${box.width}×${box.height} м<br>
+                    Объём: ${box.volume} м³<br>
+                    Цена: ${box.price} ₽/мес
+                `;
+                
+                updatePricePreview({
+                    box_number: box.number,
+                    box_dimensions: `${box.length}×${box.width}×${box.height}`,
+                    box_volume: box.volume,
+                    monthly_price: box.price,
+                    original_price: box.price
+                });
+            });
+    }
+    
+    selectedBox.addEventListener('change', updateBoxInfo);
+    
+    function tryAutoSelect() {
+        const l = parseFloat(needLength.value) || 0;
+        const w = parseFloat(needWidth.value) || 0;
+        const h = parseFloat(needHeight.value) || 0;
+        const warehouseId = warehouseSelect.value;
+        
+        if (!l || !w || !h || !warehouseId) {
+            autoResult.style.display = 'none';
+            autoError.style.display = 'none';
+            return;
+        }
+        
+        const volume = l * w * h;
+        
+        let suitable = null;
+        for (const [id, box] of Object.entries(warehouseBoxes)) {
+            const volMatch = box.label.match(/(\d+\.?\d*)м³/);
+            if (volMatch) {
+                const boxVol = parseFloat(volMatch[1]);
+                if (boxVol >= volume && (!suitable || boxVol < suitable.volume)) {
+                    suitable = { id, volume: boxVol, box };
+                }
+            }
+        }
+        
+        if (suitable) {
+            fetch(`/storage/ajax/box-details/${suitable.id}/`)
+                .then(r => r.json())
+                .then(box => {
+                    autoResult.style.display = 'block';
+                    autoError.style.display = 'none';
+                    document.getElementById('auto_box_info').innerHTML = `
+                        <strong>№${box.number}</strong> — ${box.volume}м³ 
+                        (${box.length}×${box.width}×${box.height}м)<br>
+                        <small>Ваш объём: ${volume.toFixed(2)}м³</small>
+                    `;
+                    
+                    updatePricePreview({
+                        box_number: box.number,
+                        box_dimensions: `${box.length}×${box.width}×${box.height}`,
+                        box_volume: box.volume,
+                        monthly_price: box.price,
+                        original_price: box.price
+                    });
+                });
+        } else {
+            autoResult.style.display = 'none';
+            autoError.style.display = 'block';
+            document.getElementById('auto_error_msg').textContent = 
+                `Нужен бокс от ${volume.toFixed(2)}м³. На этом складе нет подходящего.`;
+            pricePreview.style.display = 'none';
+        }
+        
+        checkSubmit();
+    }
+    
+    [needLength, needWidth, needHeight].forEach(input => {
+        input.addEventListener('input', tryAutoSelect);
+    });
+    
+    function updatePricePreview(data) {
+        const months = parseInt(duration.value) || 1;
+        let discount = 0;
+        if (months >= 12) discount = 0.15;
+        else if (months >= 6) discount = 0.10;
+        
+        const finalMonthly = data.original_price * (1 - discount);
+        const total = finalMonthly * months;
+        
+        document.getElementById('preview_box').textContent = `№${data.box_number}`;
+        document.getElementById('preview_dims').textContent = data.box_dimensions;
+        document.getElementById('preview_volume').textContent = `${data.box_volume} м³`;
+        document.getElementById('preview_monthly').textContent = `${finalMonthly.toFixed(2)} ₽`;
+        document.getElementById('preview_total').textContent = `${total.toFixed(2)} ₽`;
+        
+        const discountRow = document.getElementById('discount_row');
+        if (discount > 0) {
+            discountRow.style.display = 'table-row';
+            document.getElementById('preview_discount').textContent = `${(discount*100).toFixed(0)}%`;
+        } else {
+            discountRow.style.display = 'none';
+        }
+        
+        pricePreview.style.display = 'block';
+        checkSubmit();
+    }
+    
+    duration.addEventListener('change', () => {
+        if (selectedBox.value) updateBoxInfo();
+        else if (needLength.value) tryAutoSelect();
+    });
+    
+    function checkSubmit() {
+        const mode = modeInput.value;
+        const hasWarehouse = warehouseSelect.value;
+        const hasPdn = document.getElementById('id_pdn').checked;
+        
+        let ready = false;
+        
+        if (mode === 'manual') {
+            ready = hasWarehouse && selectedBox.value && hasPdn;
+        } else {
+            const hasDims = needLength.value && needWidth.value && needHeight.value;
+            const hasResult = autoResult.style.display === 'block';
+            ready = hasWarehouse && hasDims && hasResult && hasPdn;
+        }
+        
+        submitBtn.disabled = !ready;
+    }
+    
+    document.getElementById('id_pdn').addEventListener('change', checkSubmit);
+    
+    loadWarehouseBoxes();
 });
 </script>
-{% endif %}
 {% endblock %}

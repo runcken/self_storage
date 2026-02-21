@@ -10,4 +10,5 @@ urlpatterns =  [
     path('order/confirmation/', views.order_confirmation_view, name='order_confirmation'),
     path('rent/<int:pk>/extend/', views.extend_rent_view, name='extend_rent'),
     path('rent/<int:pk>/open/', views.open_box_view, name='open_box'),
+    path('ajax/box-details/<int:box_id>/', views.box_details, name='box_details'),
     ]
