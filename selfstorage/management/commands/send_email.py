@@ -27,11 +27,9 @@ class Command(BaseCommand):
         for agreement in active_agreements:
             days_until_end = (agreement.end_date - today).days
             
-            # Проверяем и отправляем напоминания в зависимости от оставшихся дней
             if days_until_end > 0:
                 self._check_and_send_reminders(agreement, days_until_end)
             
-            # Если договор просрочен, но статус еще активный
             elif days_until_end < 0:
                 self._handle_overdue_agreement(agreement, abs(days_until_end))
         
