@@ -111,7 +111,13 @@ def cabinet_view(request):
     Вьюха личного кабинета
     Доступна только авторизованным пользователям
     """
-    profile = request.user.profile
+    profile, created = Profile.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'phone': '',
+            'address': ''
+        }
+    )
     
     # Генерация или получение существующего QR-кода
     if not profile.qr_code:
