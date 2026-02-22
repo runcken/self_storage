@@ -330,6 +330,7 @@ class RentalAgreementAdmin(admin.ModelAdmin):
             'fields': ('promo_code',),
             'description': 'Выберите промокод из списка (оставьте пустым, если не применяется)'
         }),
+        ('Бесплатная доставка вещей до склада', {'fields': ('free_delivery',)}),
         ('Финансы', {
             'fields': ('price_display',),
             'description': 'Стоимость'

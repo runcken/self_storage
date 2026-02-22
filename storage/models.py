@@ -310,7 +310,7 @@ class RentalAgreement(models.Model):
         verbose_name="Арендуемые боксы",
         # null=True,
         blank=True
-        )
+    )
     start_date = models.DateField(
         verbose_name="Дата начала",
         default=date.today
@@ -320,6 +320,9 @@ class RentalAgreement(models.Model):
         null=True,
         blank=True,
     )
+    free_delivery = models.BooleanField(
+        default=False,
+        verbose_name="Бесплатный вывоз")
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
