@@ -5,7 +5,7 @@ from django.db.models import F, Q
 from django.utils.safestring import mark_safe
 from django import forms
 from datetime import date
-from .models import Warehouse, BoxType, Box, WarehouseImage, Client, RentalAgreement, AdTransition
+from .models import Warehouse, BoxType, Box, WarehouseImage, Client, RentalAgreement, PromoCode
 
 
 class RentStatusFilter(admin.SimpleListFilter):
@@ -178,6 +178,81 @@ class BoxAdmin(admin.ModelAdmin):
     warehouse.short_description = "Склад"
 
 
+@admin.register(PromoCode)
+class PromoCodeAdmin(admin.ModelAdmin):
+    list_display = (
+        'code', 
+        'discount_percent', 
+        'max_uses', 
+        'is_active', 
+        'valid_from', 
+        'valid_until',
+        'status_display'
+    )
+    list_filter = ('is_active', 'valid_from', 'valid_until')
+    search_fields = ('code',)
+    readonly_fields = ('created_at', 'usage_statistics')
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('code', 'discount_percent', 'is_active')
+        }),
+        ('Срок действия', {
+            'fields': ('valid_from', 'valid_until'),
+            'description': 'Оставьте "Действует до" пустым для бессрочного действия'
+        }),
+        ('Ограничения', {
+            'fields': ('max_uses',),
+            'description': 'max_uses=0 - без ограничений'
+        }),
+        ('Статистика использования', {
+            'fields': ('usage_statistics', 'created_at'),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    def status_display(self, obj):
+        if obj.is_valid():
+            return format_html('<span style="color:green;">✓ Активен</span>', '')
+        else:
+            return format_html('<span style="color:red;">✗ Не активен</span>', '')
+    status_display.short_description = "Статус"
+    
+    def usage_statistics(self, obj):
+        if not obj.pk:
+            return "Сохраните промокод для просмотра статистики"
+        
+        agreements = obj.agreements.all()
+        total_uses = agreements.count()
+        
+        if total_uses > 0:
+            last_use = agreements.order_by('-created_at').first().created_at.strftime('%d.%m.%Y %H:%M')
+        else:
+            last_use = '—'
+        
+        return format_html(
+            '<div>'
+            '<p><strong>Всего применений:</strong> {}</p>'
+            '<p><strong>Последнее использование:</strong> {}</p>'
+            '</div>',
+            total_uses,
+            last_use
+        )
+    usage_statistics.short_description = "Статистика"
+    
+    actions = ['activate_promocodes', 'deactivate_promocodes']
+    
+    def activate_promocodes(self, request, queryset):
+        queryset.update(is_active=True)
+        self.message_user(request, f"Активировано {queryset.count()} промокодов")
+    activate_promocodes.short_description = "Активировать выбранные промокоды"
+    
+    def deactivate_promocodes(self, request, queryset):
+        queryset.update(is_active=False)
+        self.message_user(request, f"Деактивировано {queryset.count()} промокодов")
+    deactivate_promocodes.short_description = "Деактивировать выбранные промокоды"
+
+
 class RentalAgreementForm(forms.ModelForm):
     class Meta:
         model = RentalAgreement
@@ -195,6 +270,41 @@ class RentalAgreementForm(forms.ModelForm):
     class Media:
         js = ('storage/js/dependent_boxes.js',)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['promo_code'].required = False
+        self.fields['promo_code'].label = "Выберите промокод из списка"
+        self.fields['promo_code'].help_text = "Каждый промокод можно использовать только один раз для одного клиента"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        client = cleaned_data.get('client')
+        promo_code = cleaned_data.get('promo_code')
+        
+        # Проверяем уникальность client + promo_code
+        if client and promo_code:
+            # Если это редактирование существующего договора
+            if self.instance and self.instance.pk:
+                # Проверяем, есть ли другой договор у этого клиента с таким же промокодом
+                existing = RentalAgreement.objects.filter(
+                    client=client,
+                    promo_code=promo_code
+                ).exclude(pk=self.instance.pk).exists()
+            else:
+                # Для нового договора
+                existing = RentalAgreement.objects.filter(
+                    client=client,
+                    promo_code=promo_code
+                ).exists()
+            
+            if existing:
+                raise forms.ValidationError(
+                    f"Клиент {client} уже использовал промокод {promo_code.code}. "
+                    "Каждый промокод можно использовать только один раз для одного клиента."
+                )
+        
+        return cleaned_data
+
 
 @admin.register(RentalAgreement)
 class RentalAgreementAdmin(admin.ModelAdmin):
@@ -205,92 +315,74 @@ class RentalAgreementAdmin(admin.ModelAdmin):
         'get_boxes_list',
         'status',
         'start_date',
-        'is_expired_display',
-        'get_price_with_penalty'
+        'status_display',
+        'get_price_with_promo',
+        'promo_code_display'
     )
     list_filter = ('status', RentStatusFilter, 'warehouse', 'boxes__status')
-    search_fields = ('client__full_name', 'warehouse__address')
+    search_fields = ('client__full_name', 'warehouse__address', 'promo_code__code')
     
     fieldsets = (
         ('Стороны договора', {'fields': ('client', 'warehouse')}),
         ('Предмет аренды', {'fields': ('boxes',)}),
         ('Сроки и статус', {'fields': ('start_date', 'end_date', 'status')}),
+        ('Промокод', {
+            'fields': ('promo_code',),
+            'description': 'Выберите промокод из списка (оставьте пустым, если не применяется)'
+        }),
         ('Финансы', {
-            'fields': ('display_current_cost',),
+            'fields': ('price_display',),
             'description': 'Стоимость'
-            }),
+        }),
     )
 
-    readonly_fields = ('display_current_cost',)
+    readonly_fields = ('price_display',)
 
     def get_boxes_list(self, obj):
-        if not obj.pk or not hasattr(obj, '_prefetched_objects_cache'):
+        if not obj.pk:
             return "-"
-        try:
-            return ", ".join([b.number for b in obj.boxes.all()])
-        except Exception:
-            return "-"
+        return ", ".join([b.number for b in obj.boxes.all()[:3]])
     get_boxes_list.short_description = "Боксы"
 
-    def is_expired_display(self, obj):
+    def status_display(self, obj):
         if not obj.pk:
             return "-"
         if obj.status != 'active':
-            return "-"
+            return obj.get_status_display()
         if obj.end_date and obj.end_date < date.today():
-            return format_html('<span style="color:red;">{}</span>', "Просрочен")
+            return format_html('<span style="color:red;">Просрочен</span>', '')
         if obj.end_date and obj.end_date == date.today():
-            return format_html('<span style="color:orange;">{}</span>', "Заканчивается сегодня")
-        return format_html('<span style="color:green;">{}</span>', "OK")
-    is_expired_display.short_description = "Статус срока"
+            return format_html('<span style="color:orange;">Заканчивается сегодня</span>', '')
+        return format_html('<span style="color:green;">Активен</span>', '')
+    status_display.short_description = "Статус срока"
 
-    def get_price_with_penalty(self, obj):
+    def get_price_with_promo(self, obj):
         if not obj.pk:
             return "-"
         try:
-            cost = obj.get_total_monthly_cost()
-            if obj.is_overdue and not obj.is_grace_period_expired:
-                return format_html('<span style="color:red; font-weight:bold;">{} ₽ ( +25%)</span>', cost)
-            elif obj.is_grace_period_expired:
-                return format_html('<span style="color:red; font-weight:bold;">{} ₽ (ИСТЕК СРОК)</span>', cost)
-            return f"{cost} ₽"
+            return f"{obj.get_final_monthly_cost():.2f} ₽"
         except Exception:
             return "-"
-    get_price_with_penalty.short_description = "Стоимость/мес"
+    get_price_with_promo.short_description = "Стоимость/мес"
 
-    # def is_overdue_warning(self, obj):
-    #     if not obj.pk or not obj.end_date:
-    #         return "-"
-    #     try:
-    #         if obj.is_grace_period_expired:
-    #             return format_html('<span style="color:red; font-weight:bold;">ОСВОБОДИТЬ СРОЧНО</span>')
-    #         if obj.is_overdue:
-    #             days_overdue = (date.today() - obj.end_date).days
-    #             return format_html('<span style="color:orange;">Просрочен на {} дн.</span>', days_overdue)
-    #         return "-"
-    #     except Exception:
-    #         return "-"
-    # is_overdue_warning.short_description = "Статус срока"
+    def promo_code_display(self, obj):
+        if obj.promo_code:
+            return format_html(
+                '{} (-{}%)',
+                obj.promo_code.code,
+                obj.promo_code.discount_percent
+            )
+        return "-"
+    promo_code_display.short_description = "Промокод"
 
-    def display_current_cost(self, obj):
+    def price_display(self, obj):
         if not obj.pk:
-            return "Сохраните договор, чтобы увидеть расчет стоимости"
+            return "Сохраните договор для расчета"
         try:
-            base = sum(b.box_type.price for b in obj.boxes.all())
-            mult = obj.get_current_price_multiplier()
-            total = base * mult
-        
-            text = f"Базовая цена: {base} руб.\n"
-            if mult > 1:
-                text += f"Коэффициент просрочки: x{mult}\n"
-            text += f"Итого к оплате: {total} руб."
-            return text
+            return obj.get_final_monthly_cost_display()
         except Exception:
             return "Ошибка расчета"
-    display_current_cost.short_description = "Детали расчета"   
-
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
+    price_display.short_description = "Итоговая стоимость"
 
 
 @admin.register(Client)
