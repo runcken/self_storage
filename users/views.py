@@ -206,7 +206,7 @@ def my_rent_view(request):
     # Получаем активные аренды
     active_rentals = RentalAgreement.objects.filter(
         client=client
-    ).exclude(status__in=['completed', 'cancelled'])
+    ).exclude(status__in=['completed', 'cancelled']).select_related('warehouse').prefetch_related('boxes', 'boxes__box_type')
     
     if active_rentals.exists():
         return render(request, 'my-rent.html', {

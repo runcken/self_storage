@@ -6,6 +6,7 @@
 {% block content %}
 <div class="row mt-header">
     <div class="col-lg-3 d-flex flex-column nav nav-pills">
+        <!-- ИЗМЕНЕНО: убран namespace users: -->
         <a href="{% url 'cabinet' %}" 
            class="ps-0 btn bg-white fs_24 shadow-none SelfStorage_grey SelfStorage_tab">
             Личный кабинет
@@ -30,7 +31,7 @@
                 Добрый день, {{ user.first_name|default:user.username }}!
             </h1>
             
-            <a href="#" class="SelfStorage_orange mb-3 d-block">История аренды</a>
+            <!-- УДАЛЕНО: Кнопка "История аренды" -->
             
             {% for rental in rentals %}
             <div class="mb-5 pb-4 border-bottom">
@@ -46,11 +47,28 @@
                     {% endfor %}
                 </h4>
                 
+                <!-- ДОБАВЛЕНО: Размер бокса -->
+                <h4 class="SelfStorage_green mt-3">Размер бокса</h4>
+                <h4>
+                    {% for box in rental.boxes.all %}
+                        {% if box.box_type %}
+                            {{ box.box_type.length }}×{{ box.box_type.width }}×{{ box.box_type.height }} м 
+                            ({{ box.box_type.volume }} м³)
+                        {% else %}
+                            Не указан
+                        {% endif %}
+                        {% if not forloop.last %}<br>{% endif %}
+                    {% empty %}
+                        —
+                    {% endfor %}
+                </h4>
+                
                 <h4 class="SelfStorage_green mt-3">Срок аренды</h4>
                 <h4>{{ rental.start_date|date:"d.m.Y" }} — {{ rental.end_date|date:"d.m.Y"|default:"Не ограничен" }}</h4>
                 
                 <div class="mt-3">
                     <button class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_green SelfStorage__btn2_green mb-3">
+                        <!-- ИЗМЕНЕНО: убран namespace storage: -->
                         <a href="{% url 'extend_rent' rental.id %}" 
                             class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_green SelfStorage__btn2_green mb-3">
                             Продлить аренду
@@ -59,13 +77,15 @@
                 </div>
                 <div>
                     <button class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_orange SelfStorage__btn2_orange mb-3">
+                        <!-- ИЗМЕНЕНО: убран namespace storage: -->
                     <a href="{% url 'open_box' rental.id %}" 
                         class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_orange SelfStorage__btn2_orange mb-3">
                         Открыть бокс
                     </a>
                     </button>
                 </div>
-                <a href="#" class="SelfStorage_orange">Нужна помощь?</a>
+                <!-- ИЗМЕНЕНО: ссылка на FAQ -->
+                <a href="{% url 'faq' %}" class="SelfStorage_orange">Нужна помощь?</a>
             </div>
             {% endfor %}
         </div>
