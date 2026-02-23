@@ -191,6 +191,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const modeInput = document.getElementById('id_mode');
     const manualBtn = document.getElementById('mode_manual_btn');
     const autoBtn = document.getElementById('mode_auto_btn');

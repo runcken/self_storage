@@ -21,7 +21,7 @@
                     {% endif %}
                     {% if order_data.promo_code %}
                     <p><strong>Скидка по промокоду {{ order_data.promo_code }}:</strong> 
-                    <span class="text-success">-{{ order_data.promo_discount }}%</span>
+                    <span class="text-success">{{ order_data.promo_discount }}%</span>
                     </p>
                     {% endif %}
                     <p><strong>Стоимость в месяц:</strong> {{ order_data.monthly_price }} ₽</p>

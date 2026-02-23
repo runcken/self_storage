@@ -11,9 +11,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
-# Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -78,7 +75,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LANGUAGE_CODE = "en-us"
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+LANGUAGE_CODE = "ru-ru"
 
 TIME_ZONE = "Europe/Moscow"
 
@@ -86,22 +84,14 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = '/static/'
-
 INTERNAL_IPS = [
     '127.0.0.1'
 ]
 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
-
-# Настройки входа/выхода
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/cabinet/'
 LOGOUT_REDIRECT_URL = '/'
 
-# Настройки медиа и статики
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'

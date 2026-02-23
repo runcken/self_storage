@@ -2,8 +2,6 @@ from django.urls import path
 from . import views
 
 
-# app_name = 'storage'
-
 urlpatterns =  [
     path('ajax/get-boxes/', views.get_boxes_by_warehouse, name='ajax_get_boxes'),
     path('ajax/box-details/<int:box_id>/', views.box_details, name='box_details'),

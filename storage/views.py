@@ -6,7 +6,6 @@ from django.contrib.auth.decorators import login_required
 from .forms import OrderForm 
 from .models import Box, Client, RentalAgreement, Warehouse
 from datetime import timedelta
-from django.http import JsonResponse
 from .models import PromoCode
 from datetime import date
 
@@ -96,6 +95,7 @@ def order_view(request):
         start_date = form.cleaned_data['start_date']
         duration_months = form.cleaned_data['rental_duration']
         end_date = start_date + timedelta(days=int(duration_months * 30.44))
+        need_delivery = form.cleaned_data.get('need_delivery', False)
         
         agreement = RentalAgreement.objects.create(
             client=client,
@@ -103,7 +103,8 @@ def order_view(request):
             start_date=start_date,
             end_date=end_date,
             status='active',
-            promo_code=applied_promo
+            promo_code=applied_promo,
+            free_delivery=need_delivery
         )
         
         final_box = form.cleaned_data['selected_box']
@@ -139,6 +140,7 @@ def order_view(request):
             'agreement_id': agreement.id,
             'box_numbers': [b.number for b in agreement.boxes.all()],
             'box_assigned': final_box is not None,
+            'free_delivery': need_delivery,
         }
         
         return redirect('order_confirmation')
