@@ -97,9 +97,6 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# ============================================
-# EMAIL SETTINGS
-# ============================================
 load_dotenv()
 gmail_password = os.environ.get('GMAIL_PASSWORD', '')
 email_host_user = os.environ.get('EMAIL_HOST_USER', '')
@@ -111,13 +108,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = email_host_user
 EMAIL_HOST_PASSWORD = gmail_password
 
-# ИСПРАВЛЕНО: используем реальный email отправителя (должен совпадать с EMAIL_HOST_USER)
-# Gmail не позволяет отправлять от имени другого адреса без дополнительной настройки
 DEFAULT_FROM_EMAIL = f'SelfStorage <{email_host_user}>' if email_host_user else 'support@selfstorage.com'
 
-# ============================================
-# LOGGING - ВАЖНО для отладки email
-# ============================================
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -160,5 +152,4 @@ LOGGING = {
     },
 }
 
-# Создаём папку для логов если не существует
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
