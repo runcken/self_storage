@@ -158,16 +158,43 @@ class EmailNotificationService:
         """
         Базовый метод отправки email с обновлением флага отправки
         """
-        if not agreement.client.email:
-            logger.warning(f"Клиент {agreement.client.full_name} не имеет email, пропускаем")
-            return False
+        # ДЕТАЛЬНАЯ ПРОВЕРКА email клиента
+        client_email = agreement.client.email
+        
+        if not client_email:
+            logger.warning(
+                f"[EMAIL] Клиент {agreement.client.full_name} (ID: {agreement.client.id}) "
+                f"не имеет email! Договор #{agreement.id}"
+            )
+            # Пробуем получить email из связанного User
+            if agreement.client.user and agreement.client.user.email:
+                client_email = agreement.client.user.email
+                logger.info(f"[EMAIL] Используем email из User: {client_email}")
+                # Сохраняем в модель Client для будущего
+                agreement.client.email = client_email
+                agreement.client.save(update_fields=['email'])
+            else:
+                logger.error(
+                    f"[EMAIL] Нет email для клиента {agreement.client.full_name}. "
+                    f"Письмо НЕ отправлено."
+                )
+                return False
+        
+        # Логируем попытку отправки
+        logger.info(
+            f"[EMAIL] Попытка отправки письма:\n"
+            f"  -> Кому: {client_email}\n"
+            f"  -> Тема: {subject}\n"
+            f"  -> Договор: #{agreement.id}\n"
+            f"  -> Клиент: {agreement.client.full_name}"
+        )
         
         try:
-            send_mail(
+            result = send_mail(
                 subject=subject,
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[agreement.client.email],
+                recipient_list=[client_email],
                 fail_silently=False,
             )
             
@@ -176,9 +203,14 @@ class EmailNotificationService:
                 setattr(agreement, flag_field, True)
                 agreement.save(update_fields=[flag_field])
             
-            logger.info(f"Уведомление отправлено клиенту {agreement.client.email} по договору #{agreement.id}")
+            logger.info(
+                f"[EMAIL] Письмо успешно отправлено на {client_email} "
+                f"(договор #{agreement.id}, result={result})"
+            )
             return True
             
         except Exception as e:
-            logger.error(f"Ошибка отправки email клиенту {agreement.client.email}: {e}")
+            logger.error(
+                f"[EMAIL] Ошибка отправки email на {client_email}: {type(e).__name__}: {e}"
+            )
             return False

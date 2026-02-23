@@ -97,9 +97,12 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# ============================================
+# EMAIL SETTINGS
+# ============================================
 load_dotenv()
-gmail_password = os.environ['GMAIL_PASSWORD']
-email_host_user= os.environ['EMAIL_HOST_USER']
+gmail_password = os.environ.get('GMAIL_PASSWORD', '')
+email_host_user = os.environ.get('EMAIL_HOST_USER', '')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -107,4 +110,55 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = email_host_user
 EMAIL_HOST_PASSWORD = gmail_password
-DEFAULT_FROM_EMAIL = 'Поддержка <support@SelfStorage.com>'
+
+# ИСПРАВЛЕНО: используем реальный email отправителя (должен совпадать с EMAIL_HOST_USER)
+# Gmail не позволяет отправлять от имени другого адреса без дополнительной настройки
+DEFAULT_FROM_EMAIL = f'SelfStorage <{email_host_user}>' if email_host_user else 'support@selfstorage.com'
+
+# ============================================
+# LOGGING - ВАЖНО для отладки email
+# ============================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'django.mail': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'storage': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+# Создаём папку для логов если не существует
+os.makedirs(BASE_DIR / 'logs', exist_ok=True)
