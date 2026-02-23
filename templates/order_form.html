@@ -237,11 +237,12 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(r => r.json())
             .then(data => {
                 if (data.valid) {
-                    promoResult.innerHTML = `<span class="text-success">✓ Промокод действует!</span>`;
+                    promoResult.innerHTML = `<span class="text-success"> ${data.message}</span>`;
                     currentPromoDiscount = data.discount;
                     currentPromoCode = code;
                 } else {
-                    promoResult.innerHTML = `<span class="text-danger">✗ ${data.message}</span>`;
+                    // Показываем сообщение об ошибке (включая "уже использован")
+                    promoResult.innerHTML = `<span class="text-danger"> ${data.message}</span>`;
                     currentPromoDiscount = 0;
                     currentPromoCode = '';
                 }

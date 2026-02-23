@@ -48,6 +48,18 @@ def order_view(request):
             }
             return render(request, 'order_form.html', context)
 
+        # 1. СНАЧАЛА получаем или создаем клиента (нужен для проверки промокода)
+        client, created = Client.objects.get_or_create(
+            user=request.user,
+            defaults={
+                'full_name': f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username,
+                'phone': request.POST.get('phone', ''),
+                'email': request.user.email,
+                'address': request.POST.get('address', '')
+            }
+        )
+        
+        # 2. Обработка промокода
         promo_code_input = form.cleaned_data.get('promo_code', '').strip()
         applied_promo = None
         promo_discount = 0
@@ -61,17 +73,28 @@ def order_view(request):
                     valid_until__gte=date.today()
                 )
                 
-                if promo.is_valid():
+                # ПРОВЕРКА: Уже использовал ли этот клиент этот промокод?
+                if RentalAgreement.objects.filter(client=client, promo_code=promo).exists():
+                    messages.warning(request, f'Промокод "{promo.code}" уже использован вами ранее')
+                    applied_promo = None
+                    promo_discount = 0
+                # Проверка: Валиден ли промокод (лимит использований)?
+                elif not promo.is_valid():
+                    messages.warning(request, 'Лимит использований промокода исчерпан')
+                    applied_promo = None
+                    promo_discount = 0
+                else:
+                    # Промокод можно использовать
                     applied_promo = promo
                     promo_discount = promo.discount_percent
                     messages.success(request, f'Промокод "{promo.code}" применён: скидка {promo_discount}%')
                     promo.used_count += 1
                     promo.save()
-                else:
-                    messages.warning(request, 'Лимит использований промокода исчерпан')
+                    
             except PromoCode.DoesNotExist:
                 messages.warning(request, 'Промокод не найден или не действителен')
         
+        # 3. Расчет цены
         price_info = form.calculate_price(promo_discount=promo_discount)
         
         if price_info['volume'] == 0:
@@ -82,16 +105,7 @@ def order_view(request):
             }
             return render(request, 'order_form.html', context)
         
-        client, created = Client.objects.get_or_create(
-            user=request.user,
-            defaults={
-                'full_name': f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username,
-                'phone': request.POST.get('phone', ''),
-                'email': request.user.email,
-                'address': request.POST.get('address', '')
-            }
-        )
-        
+        # 4. Создание договора
         start_date = form.cleaned_data['start_date']
         duration_months = form.cleaned_data['rental_duration']
         end_date = start_date + timedelta(days=int(duration_months * 30.44))
@@ -107,6 +121,7 @@ def order_view(request):
             free_delivery=need_delivery
         )
         
+        # 5. Назначение бокса
         final_box = form.cleaned_data['selected_box']
         volume_needed = float(price_info['volume'])
         
@@ -126,6 +141,7 @@ def order_view(request):
         else:
             messages.error(request, 'Ошибка: бокс не назначен')
         
+        # 6. Сохранение в сессию
         request.session['order_data'] = {
             'warehouse': str(form.cleaned_data['warehouse']),
             'volume': volume_needed,
@@ -206,19 +222,37 @@ def order_confirmation_view(request):
     
 def check_promo_code(request):
     code = request.GET.get('code', '').strip()
+    
+    # Получаем клиента текущего пользователя
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        client = None
+    
     try:
         promo = PromoCode.objects.get(code=code, is_active=True)
-        if promo.is_valid():
+        
+        # Проверка: уже использовал ли этот клиент этот промокод?
+        if client and RentalAgreement.objects.filter(client=client, promo_code=promo).exists():
             return JsonResponse({
-                'valid': True,
-                'discount': promo.discount_percent,
-                'message': f'Промокод действует! Скидка {promo.discount_percent}%'
+                'valid': False,
+                'message': f'Промокод "{promo.code}" уже использован вами в другой аренде'
             })
-        else:
+        
+        # Проверка: валиден ли (лимит, сроки)?
+        if not promo.is_valid():
             return JsonResponse({
                 'valid': False,
                 'message': 'Промокод просрочен или исчерпан'
             })
+        
+        # Промокод можно использовать
+        return JsonResponse({
+            'valid': True,
+            'discount': promo.discount_percent,
+            'message': f'Промокод действует! Скидка {promo.discount_percent}%'
+        })
+        
     except PromoCode.DoesNotExist:
         return JsonResponse({
             'valid': False,

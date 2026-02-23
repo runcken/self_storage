@@ -1,15 +1,14 @@
 import os
 from pathlib import Path
-import os
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-!ae&qzgc+dqv@w%v878!e4x9mk*v!35t&x+7e9idhvg-p&5cxr"
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-fallback-key')
 
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['AntoxaBoss.pythonanywhere.com', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     "django.contrib.admin",
