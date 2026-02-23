@@ -151,3 +151,21 @@ body {
 .z-index-1 {
     z-index: -1;
 }
+.SelfStorage__img-dynamic {
+    min-height: 500px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+}
+.SelfStorage__img-carousel {
+    height: 280px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+}
+.SelfStorage__img-box {
+    height: 250px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+}

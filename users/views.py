@@ -17,17 +17,45 @@ from .models import Profile
 
 def home_view(request):
     """Главная страница сайта"""
-    context = {}
+    from storage.models import Warehouse
+    
+    # Получаем 1-2 featured склады (можно добавить поле is_featured в модель)
+    featured_warehouses = Warehouse.objects.prefetch_related('images')[:2]
+    
+    # Добавляем вычисляемые поля
+    for warehouse in featured_warehouses:
+        warehouse.free_count = warehouse.free_units
+        warehouse.total_count = warehouse.total_units
+        warehouse.min_price_val = warehouse.min_price
+    
+    context = {
+        'featured_warehouses': featured_warehouses,
+    }
+    
     if request.user.is_authenticated:
         context['email'] = request.user.email
+    
     return render(request, 'index.html', context)
 
 
 def boxes_view(request):
-    """Страница выбора боксов для хранения"""
-    context = {}
+    from storage.models import Warehouse
+    
+    warehouses = Warehouse.objects.prefetch_related('box_types', 'box_types__boxes')
+    
+    # Добавляем вычисляемые поля
+    for warehouse in warehouses:
+        warehouse.free_count = warehouse.free_units
+        warehouse.total_count = warehouse.total_units
+        warehouse.min_price_val = warehouse.min_price
+    
+    context = {
+        'warehouses': warehouses,
+    }
+    
     if request.user.is_authenticated:
         context['email'] = request.user.email
+    
     return render(request, 'boxes.html', context)
 
 

@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Warehouse, Box
+from .models import Warehouse, Box, RentalAgreement
 
 
 class OrderForm(forms.Form):
@@ -28,6 +28,48 @@ class OrderForm(forms.Form):
             'class': 'form-control fs_24 py-3',
             'type': 'date',
             'id': 'id_start_date'
+        })
+    )
+    
+    need_delivery = forms.BooleanField(
+        label='Бесплатная доставка вещей до склада',
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input',
+            'id': 'id_need_delivery'
+        })
+    )
+    
+    delivery_address = forms.CharField(
+        label='Адрес забора вещей',
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'Укажите полный адрес: город, улица, дом, квартира, подъезд, этаж',
+            'class': 'form-control'
+        })
+    )
+    
+    delivery_comment = forms.CharField(
+        label='Комментарий курьеру (опционально)',
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 2,
+            'placeholder': 'Например: домофон не работает, позвоните за 30 минут',
+            'class': 'form-control'
+        })
+    )
+    
+    promo_code = forms.CharField(
+        label='Промокод',
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control fs_24 py-3',
+            'id': 'id_promo_code',
+            'placeholder': 'Введите промокод (если есть)'
         })
     )
     
@@ -99,6 +141,8 @@ class OrderForm(forms.Form):
         cleaned_data = super().clean()
         mode = cleaned_data.get('mode')
         warehouse = cleaned_data.get('warehouse')
+        need_delivery = cleaned_data.get('need_delivery')
+        delivery_address = cleaned_data.get('delivery_address')
         
         if mode == 'manual':
             selected_box = cleaned_data.get('selected_box')
@@ -162,13 +206,14 @@ class OrderForm(forms.Form):
         
         return cleaned_data
     
-    def calculate_price(self):
+    def calculate_price(self, promo_discount=0):
 
         default_result = {
             'volume': 0,
             'monthly_price': 0,
             'total_price': 0,
             'discount_percent': 0,
+            'promo_discount': 0,
             'duration': 1,
         }
         
@@ -182,24 +227,28 @@ class OrderForm(forms.Form):
             
             monthly_price = float(box.box_type.price)
             
-            discount = 0
+            duration_discount = 0
             if duration >= 12:
-                discount = 0.15
+                duration_discount = 0.15
             elif duration >= 6:
-                discount = 0.10
+                duration_discount  = 0.10
+                
+            price_after_duration = monthly_price * (1 - duration_discount) 
             
-            final_monthly = monthly_price * (1 - discount)
+            final_monthly = price_after_duration * (1 - promo_discount / 100)
+            
             total = final_monthly * duration
             
             return {
                 'volume': float(box.box_type.volume),
                 'monthly_price': round(final_monthly, 2),
                 'total_price': round(total, 2),
-                'discount_percent': int(discount * 100),
+                'discount_percent': int(duration_discount * 100),
+                'promo_discount': promo_discount,
                 'duration': duration,
                 'box_number': box.number,
                 'box_dimensions': f"{box.box_type.length}×{box.box_type.width}×{box.box_type.height}",
-                'warehouse': str(box.box_type.warehouse),
+                'warehouse': str(box.box_type.warehouse),  
             }
             
         except Exception as e:

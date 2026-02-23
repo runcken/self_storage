@@ -1,54 +1,45 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block content %}
 <div class="container py-5 mt-header">
     <div class="row justify-content-center">
         <div class="col-md-10">
             <div class="card p-4 shadow">
                 <h2 class="text-center fw-bold SelfStorage_green mb-4">Оформление заказа</h2>
-                
                 {% if messages %}
                     {% for message in messages %}
                         <div class="alert alert-{{ message.tags }}">{{ message }}</div>
                     {% endfor %}
                 {% endif %}
-                
                 <div class="mb-4 text-center">
                     <div class="btn-group" role="group">
                         <input type="radio" class="btn-check" name="mode_switch" id="mode_manual_btn" checked>
                         <label class="btn btn-outline-success btn-lg" for="mode_manual_btn">
                             Выбрать конкретный бокс
                         </label>
-                        
                         <input type="radio" class="btn-check" name="mode_switch" id="mode_auto_btn">
                         <label class="btn btn-outline-primary btn-lg" for="mode_auto_btn">
                             Подобрать по размерам
                         </label>
                     </div>
                 </div>
-                
                 <form method="post" id="orderForm">
                     {% csrf_token %}
                     {{ form.mode }}
-                    
                     <div class="mb-4">
                         <label class="fs-5 fw-bold">Склад</label>
                         {{ form.warehouse }}
                     </div>
-                    
                     <div id="manual_block" class="mode-block">
                         <div class="alert alert-info">
                             <h5>Доступные боксы на выбранном складе</h5>
                             <p class="mb-0">Выберите конкретный бокс из списка. Размеры подставятся автоматически.</p>
                         </div>
-                        
                         <div class="mb-3">
                             {{ form.selected_box }}
                             <div id="box_info" class="mt-3 p-3 bg-light rounded" style="display: none;">
                             </div>
                         </div>
-                        
                         <div class="row mb-3" id="box_dimensions_info">
                             <div class="col-12">
                                 <div class="card bg-light">
@@ -62,13 +53,11 @@
                             </div>
                         </div>
                     </div>
-                    
                     <div id="auto_block" class="mode-block" style="display: none;">
                         <div class="alert alert-primary">
                             <h5>Укажите размеры ваших вещей</h5>
                             <p class="mb-0">Система автоматически подберёт минимально подходящий бокс.</p>
                         </div>
-                        
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label>{{ form.need_length.label }}</label>
@@ -83,12 +72,10 @@
                                 {{ form.need_height }}
                             </div>
                         </div>
-                        
                         <div id="auto_result" class="alert alert-success" style="display: none;">
                             <h6>Подобран бокс:</h6>
                             <p id="auto_box_info" class="mb-0"></p>
                         </div>
-                        
                         <div id="auto_error" class="alert alert-danger" style="display: none;">
                             <h6> Нет подходящего бокса</h6>
                             <p id="auto_error_msg" class="mb-0"></p>
@@ -96,9 +83,33 @@
                             <p class="mb-0">Переключитесь в режим "Выбрать конкретный бокс" чтобы посмотреть доступные варианты, или выберите другой склад.</p>
                         </div>
                     </div>
-                    
                     <hr class="my-4">
-                    
+                    <div class="mb-4">
+                        <label class="fw-bold">{{ form.promo_code.label }}</label>
+                        {{ form.promo_code }}
+                        <div id="promo_result" class="mt-2 small" style="display: none;"></div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            {{ form.need_delivery }}
+                            <label class="form-check-label fw-bold" for="id_need_delivery">
+                                {{ form.need_delivery.label }}
+                            </label>
+                        </div>
+                        <div id="delivery_info" class="mt-2 small text-success" style="display: none;">
+                            <i class="bi bi-truck"></i> Бесплатная доставка вещей до склада
+                        </div>
+                    </div>
+                    <div id="delivery_fields" style="display: none;">
+                        <div class="mb-3">
+                            <label class="fw-bold">{{ form.delivery_address.label }}</label>
+                            {{ form.delivery_address }}
+                        </div>
+                        <div class="mb-3">
+                            <label>{{ form.delivery_comment.label }}</label>
+                            {{ form.delivery_comment }}
+                        </div>
+                    </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="fs-5 fw-bold">Срок аренды</label>
@@ -126,6 +137,10 @@
                                     <td>Объём:</td>
                                     <td id="preview_volume">-</td>
                                 </tr>
+                                <tr id="delivery_row" style="display: none;">
+                                    <td class="text-success">Доставка:</td>
+                                    <td class="text-success fw-bold">Бесплатная доставка вещей до склада</td>
+                                </tr>
                                 <tr class="table-success">
                                     <td>В месяц:</td>
                                     <td id="preview_monthly" class="fw-bold">-</td>
@@ -135,8 +150,12 @@
                                     <td id="preview_total" class="fw-bold fs-5">-</td>
                                 </tr>
                                 <tr id="discount_row" style="display: none;">
-                                    <td class="text-success">Скидка:</td>
+                                    <td class="text-success">Скидка за срок аренды:</td>
                                     <td id="preview_discount" class="text-success">-</td>
+                                </tr>
+                                <tr id="promo_row" style="display: none;">
+                                    <td class="text-success">Скидка с промокодом:</td>
+                                    <td id="preview_promo_discount" class="text-success">-</td>
                                 </tr>
                             </table>
                         </div>
@@ -184,12 +203,64 @@ document.addEventListener('DOMContentLoaded', function() {
     const needWidth = document.getElementById('id_need_width');
     const needHeight = document.getElementById('id_need_height');
     const duration = document.getElementById('id_duration');
+    const startDate = document.getElementById('id_start_date');
     
     const boxDetails = document.getElementById('selected_box_details');
     const autoResult = document.getElementById('auto_result');
     const autoError = document.getElementById('auto_error');
     const pricePreview = document.getElementById('price_preview');
     const submitBtn = document.getElementById('submit_btn');
+
+    const promoInput = document.getElementById('id_promo_code');
+    const promoResult = document.getElementById('promo_result');
+    
+    const needDelivery = document.getElementById('id_need_delivery');
+    const deliveryFields = document.getElementById('delivery_fields');
+    const deliveryInfo = document.getElementById('delivery_info');
+
+    let currentPromoDiscount = 0;
+    let currentPromoCode = '';
+
+    promoInput.addEventListener('change', function() {
+        const code = this.value.trim();
+        if (!code) {
+            promoResult.style.display = 'none';
+            currentPromoDiscount = 0;
+            currentPromoCode = '';
+            if (selectedBox.value) updateBoxInfo();
+            else if (needLength.value) tryAutoSelect();
+            return;
+        }
+        
+        fetch(`/storage/ajax/check-promo/?code=${encodeURIComponent(code)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.valid) {
+                    promoResult.innerHTML = `<span class="text-success">✓ Промокод действует!</span>`;
+                    currentPromoDiscount = data.discount;
+                    currentPromoCode = code;
+                } else {
+                    promoResult.innerHTML = `<span class="text-danger">✗ ${data.message}</span>`;
+                    currentPromoDiscount = 0;
+                    currentPromoCode = '';
+                }
+                promoResult.style.display = 'block';
+                if (selectedBox.value) updateBoxInfo();
+                else if (needLength.value) tryAutoSelect();
+            });
+    });
+    
+    needDelivery.addEventListener('change', function() {
+        if (this.checked) {
+            deliveryFields.style.display = 'block';
+            deliveryInfo.style.display = 'block';
+        } else {
+            deliveryFields.style.display = 'none';
+            deliveryInfo.style.display = 'none';
+        }
+        if (selectedBox.value) updateBoxInfo();
+        else if (needLength.value) tryAutoSelect();
+    });
     
     let warehouseBoxes = {};
     
@@ -353,7 +424,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (months >= 12) discount = 0.15;
         else if (months >= 6) discount = 0.10;
         
-        const finalMonthly = data.original_price * (1 - discount);
+        const priceAfterDuration = data.original_price * (1 - discount);
+        const finalMonthly = priceAfterDuration * (1 - currentPromoDiscount / 100);
         const total = finalMonthly * months;
         
         document.getElementById('preview_box').textContent = `№${data.box_number}`;
@@ -370,11 +442,31 @@ document.addEventListener('DOMContentLoaded', function() {
             discountRow.style.display = 'none';
         }
         
+        const promoRow = document.getElementById('promo_row');
+        if (currentPromoDiscount > 0) {
+            promoRow.style.display = 'table-row';
+            document.getElementById('preview_promo_discount').textContent = `${currentPromoDiscount}%`;
+        } else {
+            promoRow.style.display = 'none';
+        }
+        
+        const deliveryRow = document.getElementById('delivery_row');
+        if (needDelivery.checked) {
+            deliveryRow.style.display = 'table-row';
+        } else {
+            deliveryRow.style.display = 'none';
+        }
+        
         pricePreview.style.display = 'block';
         checkSubmit();
     }
     
     duration.addEventListener('change', () => {
+        if (selectedBox.value) updateBoxInfo();
+        else if (needLength.value) tryAutoSelect();
+    });
+    
+    startDate.addEventListener('change', () => {
         if (selectedBox.value) updateBoxInfo();
         else if (needLength.value) tryAutoSelect();
     });

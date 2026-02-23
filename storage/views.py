@@ -6,7 +6,9 @@ from django.contrib.auth.decorators import login_required
 from .forms import OrderForm 
 from .models import Box, Client, RentalAgreement, Warehouse
 from datetime import timedelta
-
+from django.http import JsonResponse
+from .models import PromoCode
+from datetime import date
 
 def index(request):
     return render(request, 'index.html')
@@ -46,8 +48,32 @@ def order_view(request):
                 'calculator_js': True
             }
             return render(request, 'order_form.html', context)
+
+        promo_code_input = form.cleaned_data.get('promo_code', '').strip()
+        applied_promo = None
+        promo_discount = 0
         
-        price_info = form.calculate_price()
+        if promo_code_input:
+            try:
+                promo = PromoCode.objects.get(
+                    code=promo_code_input,
+                    is_active=True,
+                    valid_from__lte=date.today(),
+                    valid_until__gte=date.today()
+                )
+                
+                if promo.is_valid():
+                    applied_promo = promo
+                    promo_discount = promo.discount_percent
+                    messages.success(request, f'Промокод "{promo.code}" применён: скидка {promo_discount}%')
+                    promo.used_count += 1
+                    promo.save()
+                else:
+                    messages.warning(request, 'Лимит использований промокода исчерпан')
+            except PromoCode.DoesNotExist:
+                messages.warning(request, 'Промокод не найден или не действителен')
+        
+        price_info = form.calculate_price(promo_discount=promo_discount)
         
         if price_info['volume'] == 0:
             messages.error(request, 'Ошибка расчёта. Проверьте данные.')
@@ -76,7 +102,8 @@ def order_view(request):
             warehouse=form.cleaned_data['warehouse'],
             start_date=start_date,
             end_date=end_date,
-            status='active'
+            status='active',
+            promo_code=applied_promo
         )
         
         final_box = form.cleaned_data['selected_box']
@@ -105,6 +132,8 @@ def order_view(request):
             'monthly_price': float(price_info['monthly_price']),
             'total_price': float(price_info['total_price']),
             'discount_percent': int(price_info['discount_percent']),
+            'promo_code': applied_promo.code if applied_promo else None,
+            'promo_discount': promo_discount,
             'start_date': start_date.strftime('%d.%m.%Y'),
             'end_date': end_date.strftime('%d.%m.%Y'),
             'agreement_id': agreement.id,
@@ -172,6 +201,27 @@ def order_confirmation_view(request):
         'order_data': order_data,
         'show_cabinet_link': True
     })
+    
+def check_promo_code(request):
+    code = request.GET.get('code', '').strip()
+    try:
+        promo = PromoCode.objects.get(code=code, is_active=True)
+        if promo.is_valid():
+            return JsonResponse({
+                'valid': True,
+                'discount': promo.discount_percent,
+                'message': f'Промокод действует! Скидка {promo.discount_percent}%'
+            })
+        else:
+            return JsonResponse({
+                'valid': False,
+                'message': 'Промокод просрочен или исчерпан'
+            })
+    except PromoCode.DoesNotExist:
+        return JsonResponse({
+            'valid': False,
+            'message': 'Промокод не найден'
+        })    
 
 
 @login_required
