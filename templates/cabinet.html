@@ -92,6 +92,32 @@
                             • Для сдачи вещей на хранение — покажите код при приёме вещей на складе<br>
                             • Для забора вещей — отсканируйте код на терминале у входа в складское помещение
                         </div>
+
+                        <div class="mt-4 p-4" style="background: #f0f8ff; border-radius: 10px; border: 2px solid #0088cc;">
+                            <h5 class="mb-3">Получайте уведомления в Telegram!</h5>
+                            <p class="mb-3">Чтобы получать напоминания об окончании аренды и другие уведомления:</p>
+                            <ol class="mb-3">
+                                <li>Откройте бота: <a href="https://t.me/Self_Storage_message_bot" target="_blank" class="fw-bold">@Self_Storage_message_bot</a></li>
+                                <li>Нажмите <strong>/start</strong></li>
+                                <li>Введите ваш <strong>email</strong> или <strong>телефон</strong> из профиля</li>
+                                <li>Готово! Теперь вы будете получать:</li>
+                            </ol>
+                            <ul class="mb-3">
+                                <li>Уведомление о заказе</li>
+                                <li>Напоминания за 30, 14, 7 и 3 дня до окончания аренды</li>
+                                <li>Уведомления о просрочке</li>
+                                <li>QR-код для доступа к боксу</li>
+                            </ul>
+                            {% if profile.telegram_linked %}
+                                <div class="alert alert-success mb-0">
+                                    <strong>Telegram привязан!</strong> Ваш chat_id: {{ profile.telegram_chat_id }}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning mb-0">
+                                    <strong>Telegram не привязан</strong> — выполните шаги выше
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>

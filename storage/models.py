@@ -193,6 +193,19 @@ class Client(models.Model):
     phone = models.CharField(max_length=20, verbose_name="Телефон")
     email = models.EmailField(null=True, blank=True ,verbose_name="Email")
 
+    telegram_chat_id = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text='Telegram Chat ID для уведомлений'
+    )
+    telegram_linked = models.BooleanField(
+        default=False,
+        help_text='Telegram привязан к аккаунту'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
     class Meta:
         verbose_name = "Клиент"
         verbose_name_plural = "Клиенты"

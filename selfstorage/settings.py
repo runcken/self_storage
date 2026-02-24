@@ -4,11 +4,15 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8788678520:AAGsi2iVaB2-aGrSRW-hDtsH1nq0yBo7hIQ')
+TELEGRAM_LOGIST_CHAT_IDS = [975432272]
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-fallback-key')
 
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['AntoxaBoss.pythonanywhere.com', 'localhost', '127.0.0.1']
+TELEGRAM_CHECK_INTERVAL_MINUTES = 2 if DEBUG else 60
+
+ALLOWED_HOSTS = ['antoxaboss.pythonanywhere.com', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     "django.contrib.admin",

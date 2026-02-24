@@ -66,25 +66,24 @@
                 <h4 class="SelfStorage_green mt-3">Срок аренды</h4>
                 <h4>{{ rental.start_date|date:"d.m.Y" }} — {{ rental.end_date|date:"d.m.Y"|default:"Не ограничен" }}</h4>
                 
-                <div class="mt-3">
-                    <button class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_green SelfStorage__btn2_green mb-3">
-                        <!-- ИЗМЕНЕНО: убран namespace storage: -->
-                        <a href="{% url 'extend_rent' rental.id %}" 
-                            class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_green SelfStorage__btn2_green mb-3">
-                            Продлить аренду
-                        </a>
-                    </button>
+                <div class="mb-2">
+                    <a href="{% url 'extend_rent' rental.id %}" 
+                    class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_green SelfStorage__btn2_green">
+                        Продлить аренду
+                    </a>
                 </div>
-                <div>
-                    <button class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_orange SelfStorage__btn2_orange mb-3">
-                        <!-- ИЗМЕНЕНО: убран namespace storage: -->
+                <div class="mb-2">
                     <a href="{% url 'open_box' rental.id %}" 
-                        class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_orange SelfStorage__btn2_orange mb-3">
+                    class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_orange SelfStorage__btn2_orange">
                         Открыть бокс
                     </a>
-                    </button>
                 </div>
-                <!-- ИЗМЕНЕНО: ссылка на FAQ -->
+               <div class="mt-2">
+                    <a href="{% url 'request_qr' rental.id %}" 
+                    class="btn fs_24 px-5 py-3 text-white border-8 SelfStorage__bg_blue SelfStorage__btn2_blue mb-3">
+                        Получить QR-код для доступа
+                    </a>
+                </div>
                 <a href="{% url 'faq' %}" class="SelfStorage_orange">Нужна помощь?</a>
             </div>
             {% endfor %}

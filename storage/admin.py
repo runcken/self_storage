@@ -1,11 +1,15 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.urls import reverse
+from django.urls import reverse, path
+from django.shortcuts import redirect
+from django.contrib import messages
 from django.db.models import F, Q
 from django.utils.safestring import mark_safe
 from django import forms
 from datetime import date
 from .models import Warehouse, BoxType, Box, WarehouseImage, Client, RentalAgreement, PromoCode
+from .notification_service import TelegramNotificationService
+from django.utils.html import format_html
 
 
 class RentStatusFilter(admin.SimpleListFilter):
@@ -317,7 +321,9 @@ class RentalAgreementAdmin(admin.ModelAdmin):
         'start_date',
         'status_display',
         'get_price_with_promo',
-        'promo_code_display'
+        'promo_code_display',
+        'delivery_info',
+        'check_notifications_link',
     )
     list_filter = ('status', RentStatusFilter, 'warehouse', 'boxes__status')
     search_fields = ('client__full_name', 'warehouse__address', 'promo_code__code')
@@ -338,6 +344,66 @@ class RentalAgreementAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ('price_display',)
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('check-notifications/<int:agreement_id>/', 
+                 self.admin_site.admin_view(self.check_notifications), 
+                 name='check_agreement_notifications'),
+        ]
+        return custom_urls + urls
+    
+    def check_notifications(self, request, agreement_id):
+        """Проверяет и отправляет уведомления для конкретного договора"""
+        try:
+            agreement = RentalAgreement.objects.get(id=agreement_id)
+            today = date.today()
+            days_until_end = (agreement.end_date - today).days if agreement.end_date else None
+            
+            sent = []
+            if days_until_end is not None:
+                if days_until_end <= 30 and not agreement.reminder_30d_sent:
+                    TelegramNotificationService.send_reminder_30d(agreement)
+                    sent.append('30 дней')
+                if days_until_end <= 14 and not agreement.reminder_14d_sent:
+                    TelegramNotificationService.send_reminder_14d(agreement)
+                    sent.append('14 дней')
+                if days_until_end <= 7 and not agreement.reminder_7d_sent:
+                    TelegramNotificationService.send_reminder_7d(agreement)
+                    sent.append('7 дней')
+                if days_until_end <= 3 and not agreement.reminder_3d_sent:
+                    TelegramNotificationService.send_reminder_3d(agreement)
+                    sent.append('3 дня')
+                if days_until_end < 0 and not agreement.overdue_notification_sent:
+                    TelegramNotificationService.send_overdue_notification(agreement)
+                    sent.append('просрочка')
+            
+            if sent:
+                messages.success(request, f"Отправлены уведомления: {', '.join(sent)}")
+            else:
+                messages.info(request, "ℹНет подходящих уведомлений для отправки (уже отправлены или не подошёл срок)")
+                
+        except Exception as e:
+            messages.error(request, f"Ошибка: {e}")
+        
+        return redirect('..')
+    
+    def check_notifications_link(self, obj):
+        """Ссылка для проверки уведомлений"""
+        if not obj.pk:
+            return "—"
+        url = f'/admin/storage/rentalagreement/check-notifications/{obj.pk}/'
+        return format_html('<a href="{}" class="button">Проверить уведомления</a>', url)
+    check_notifications_link.short_description = 'Проверка'
+    
+    def delivery_info(self, obj):
+        """Показывает адрес и телефон, если нужна доставка"""
+        if obj.free_delivery:
+            client = obj.client
+            return format_html('{}<br>{}', client.phone, client.address)
+        return "—"
+    delivery_info.short_description = 'Доставка'
 
     def get_boxes_list(self, obj):
         if not obj.pk:

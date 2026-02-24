@@ -8,6 +8,11 @@ from .models import Box, Client, RentalAgreement, Warehouse
 from datetime import timedelta
 from .models import PromoCode
 from datetime import date
+from .utils import send_order_notification_to_client
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 def index(request):
     return render(request, 'index.html')
@@ -121,6 +126,7 @@ def order_view(request):
             free_delivery=need_delivery
         )
         
+        
         # 5. Назначение бокса
         final_box = form.cleaned_data['selected_box']
         volume_needed = float(price_info['volume'])
@@ -141,7 +147,21 @@ def order_view(request):
         else:
             messages.error(request, 'Ошибка: бокс не назначен')
         
-        # 6. Сохранение в сессию
+        # 6. Отправка уведомления клиенту в Telegram
+        try:
+            send_order_notification_to_client(
+                agreement=agreement,
+                price_info=price_info,
+                client=client,
+                final_box=final_box,  # Важно: final_box должен быть определён выше!
+                applied_promo=applied_promo
+            )
+        except Exception as e:
+            logger.error(f"Ошибка отправки Telegram: {e}")
+        
+        
+        
+        # 7. Сохранение в сессию
         request.session['order_data'] = {
             'warehouse': str(form.cleaned_data['warehouse']),
             'volume': volume_needed,
@@ -274,4 +294,29 @@ def open_box_view(request, pk):
     rental = get_object_or_404(RentalAgreement, id=pk, client__user=request.user)
     box_numbers = ', '.join(str(b.number) for b in rental.boxes.all())
     messages.info(request, f"Бокс(ы) №{box_numbers} открыт(ы).")
+    return redirect('my_rent')
+
+
+@login_required
+def request_qr_code_view(request, pk):
+    """Отправляет QR-код для доступа к боксу по запросу пользователя"""
+    from .notification_service import TelegramNotificationService
+    from .models import RentalAgreement
+    
+    # Получаем договор, проверяем что он принадлежит пользователю
+    agreement = get_object_or_404(RentalAgreement, id=pk, client__user=request.user)
+    
+    # Проверяем, привязан ли Telegram
+    if not request.user.client_profile.telegram_linked or not request.user.client_profile.telegram_chat_id:
+        messages.warning(request, 'Сначала привяжите Telegram в настройках профиля')
+        return redirect('my_rent')
+    
+    # Отправляем QR-код
+    success = TelegramNotificationService.send_qr_code_for_access(agreement)
+    
+    if success:
+        messages.success(request, 'QR-код отправлен в ваш Telegram!')
+    else:
+        messages.error(request, 'Ошибка отправки. Проверьте, что бот привязан.')
+    
     return redirect('my_rent')

@@ -169,3 +169,18 @@ body {
     background-position: center;
     border-radius: 8px;
 }
+.SelfStorage__bg_blue {
+    background-color: #0088cc !important;
+}
+
+.SelfStorage__btn2_blue {
+    border-color: #006699 !important;
+}
+
+.SelfStorage__bg_blue:hover {
+    background-color: #0077b3 !important;
+}
+
+.SelfStorage__btn2_blue:hover {
+    border-color: #005588 !important;
+}

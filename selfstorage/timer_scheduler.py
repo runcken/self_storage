@@ -1,7 +1,9 @@
+# storage/timer_scheduler.py
 import threading
 import time
 from django.core.management import call_command
 from django.db import connections
+from django.conf import settings
 import logging
 import atexit
 import signal
@@ -13,49 +15,61 @@ running = True
 timer_thread = None
 
 
-def send_emails_periodically():
-    """Отправляет письма с заданной периодичностью"""
+def send_telegrams_periodically(interval_minutes=1):  # Добавь параметр!
+    """
+    Отправляет Telegram-уведомления с заданной периодичностью
+    interval_minutes: как часто проверять (по умолчанию 1 минута для тестов)
+    """
     global running, timer_thread
     
+    interval_seconds = interval_minutes * 60  # Переводим минуты в секунды
+    
     def job():
-        time.sleep(60)
+        # Ждём 10 секунд после запуска сервера
+        time.sleep(10)
         
         while running:
             try:
                 connections.close_all()
                 
-                call_command('send_email')
-                logger.info("Периодическая отправка писем выполнена")
+                # Вызываем Telegram-команду
+                call_command('send_telegram_reminders', verbosity=0)
+                
+                logger.info(f"Telegram-проверка выполнена (следующая через {interval_minutes} мин)")
+                
             except Exception as e:
-                logger.error(f"Ошибка при отправке писем: {e}")
+                logger.error(f"Ошибка при отправке Telegram: {e}")
             
-            for _ in range(3600*5):
+            # Ждём интервал перед следующей проверкой
+            for _ in range(interval_seconds):
                 if not running:
                     break
                 time.sleep(1)
     
     timer_thread = threading.Thread(target=job, daemon=True)
     timer_thread.start()
-    logger.info("Таймер для периодической отправки писем запущен (интервал: 1 минута)")
     
+    logger.info(f"🤖 Telegram-планировщик запущен (интервал: {interval_minutes} минут)")
     return timer_thread
 
 
 def stop_timer(signum=None, frame=None):
-    """Останавливает таймер"""
+    """Останавливает таймер при получении сигнала"""
     global running
-    logger.info("Получен сигнал остановки таймера")
+    logger.info(" Получен сигнал остановки Telegram-планировщика")
     running = False
 
 
 def cleanup():
-    """Очистка при выходе"""
+    """Очистка при выходе из приложения"""
     stop_timer()
     if timer_thread and timer_thread.is_alive():
         timer_thread.join(timeout=2)
 
 
-signal.signal(signal.SIGINT, stop_timer)
-signal.signal(signal.SIGTERM, stop_timer)
+# Регистрируем обработчики сигналов
+signal.signal(signal.SIGINT, stop_timer)   # Ctrl+C
+signal.signal(signal.SIGTERM, stop_timer)  # kill процессу
 
+# Регистрируем очистку при нормальном выходе
 atexit.register(cleanup)
